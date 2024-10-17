@@ -1,42 +1,27 @@
 {
   "folders": [
     {
-      "path": "./",
-      "name": "ROOT"
-    },
-    {
-      "path": "./projects/veline-fs-contracts"
-    },
-    {
-      "path": "./projects/veline-fs-frontend"
-    },
-    {
+      "name": "ROOT",
       "path": "."
     },
     {
-      "path": "projects/veline-fs-frontend"
-    },
-    {
+      "name": "veline-fs-contracts",
       "path": "projects/veline-fs-contracts"
     },
     {
-      "path": "."
+      "name": "veline-fs-frontend",
+      "path": "projects/veline-fs-frontend"
     }
   ],
   "settings": {
     "files.exclude": {
       "projects/": true
     },
-    "jest.disabledWorkspaceFolders": [
-      "ROOT",
-      "projects"
-    ],
+    "jest.disabledWorkspaceFolders": ["ROOT", "projects"],
     "dotenv.enableAutocloaking": false
   },
   "extensions": {
-    "recommendations": [
-      "joshx.workspace-terminals"
-    ]
+    "recommendations": ["joshx.workspace-terminals"]
   },
   "tasks": {
     "version": "2.0.0",
@@ -44,11 +29,7 @@
       {
         "label": "Build artifacts (+ LocalNet)",
         "command": "algokit",
-        "args": [
-          "project",
-          "run",
-          "build"
-        ],
+        "args": ["project", "run", "build"],
         "options": {
           "cwd": "${workspaceFolder}"
         },
@@ -58,10 +39,7 @@
       {
         "label": "Start AlgoKit LocalNet",
         "command": "algokit",
-        "args": [
-          "localnet",
-          "start"
-        ],
+        "args": ["localnet", "start"],
         "type": "shell",
         "options": {
           "cwd": "${workspaceFolder}"
