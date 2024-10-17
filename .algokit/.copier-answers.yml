@@ -1,0 +1,10 @@
+# Changes here will be overwritten by Copier; NEVER EDIT MANUALLY
+_commit: 2.0.11
+_src_path: gh:algorandfoundation/algokit-fullstack-template
+author_email: uka.pgr@gmail.com
+author_name: odin-hoang
+contract_name: veline_contract
+deployment_language: python
+preset_name: starter
+project_name: veline-fs
+

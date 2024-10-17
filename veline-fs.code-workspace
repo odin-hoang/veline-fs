@@ -1,0 +1,96 @@
+{
+  "folders": [
+    {
+      "path": "./",
+      "name": "ROOT"
+    },
+    {
+      "path": "./projects/veline-fs-contracts"
+    },
+    {
+      "path": "./projects/veline-fs-frontend"
+    },
+    {
+      "path": "."
+    },
+    {
+      "path": "projects/veline-fs-frontend"
+    },
+    {
+      "path": "projects/veline-fs-contracts"
+    },
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "projects/": true
+    },
+    "jest.disabledWorkspaceFolders": [
+      "ROOT",
+      "projects"
+    ],
+    "dotenv.enableAutocloaking": false
+  },
+  "extensions": {
+    "recommendations": [
+      "joshx.workspace-terminals"
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Build artifacts (+ LocalNet)",
+        "command": "algokit",
+        "args": [
+          "project",
+          "run",
+          "build"
+        ],
+        "options": {
+          "cwd": "${workspaceFolder}"
+        },
+        "dependsOn": "Start AlgoKit LocalNet",
+        "problemMatcher": []
+      },
+      {
+        "label": "Start AlgoKit LocalNet",
+        "command": "algokit",
+        "args": [
+          "localnet",
+          "start"
+        ],
+        "type": "shell",
+        "options": {
+          "cwd": "${workspaceFolder}"
+        },
+        "problemMatcher": []
+      }
+    ]
+  },
+  "launch": {
+    "configurations": [],
+    "compounds": [
+      {
+        "preLaunchTask": "Build artifacts (+ LocalNet)",
+        "name": "Run Frontend (+ LocalNet and Smart Contract)",
+        "configurations": [
+          {
+            "name": "Deploy contracts",
+            "folder": "veline-fs-contracts"
+          },
+          {
+            "name": "Run dApp",
+            "folder": "veline-fs-frontend"
+          }
+        ],
+        "presentation": {
+          "hidden": false,
+          "group": "0. Run workspace"
+        }
+      }
+    ]
+  }
+}
