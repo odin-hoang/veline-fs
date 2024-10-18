@@ -1,0 +1,629 @@
+#pragma version 10
+
+smart_contracts.campaign.contract.Campaign.approval_program:
+    txn ApplicationID
+    bnz main_entrypoint@2
+    callsub __init__
+
+main_entrypoint@2:
+    callsub __puya_arc4_router__
+    return
+
+
+// smart_contracts.campaign.contract.Campaign.__puya_arc4_router__() -> uint64:
+__puya_arc4_router__:
+    proto 0 1
+    txn NumAppArgs
+    bz __puya_arc4_router___bare_routing@11
+    method "op_into_asset(asset)void"
+    method "allow_owner_campaign(address)void"
+    method "add_campaign(byte[],byte[],uint64)void"
+    method "mint_asset(address,uint64,uint64)void"
+    method "check_eligible(address,uint64,uint64)bool"
+    method "owner_campaign(uint64)address"
+    method "creator()address"
+    txna ApplicationArgs 0
+    match __puya_arc4_router___op_into_asset_route@2 __puya_arc4_router___allow_owner_campaign_route@3 __puya_arc4_router___add_campaign_route@4 __puya_arc4_router___mint_asset_route@5 __puya_arc4_router___check_eligible_route@6 __puya_arc4_router___owner_campaign_route@7 __puya_arc4_router___creator_route@8
+    int 0
+    retsub
+
+__puya_arc4_router___op_into_asset_route@2:
+    txn OnCompletion
+    !
+    assert // OnCompletion is NoOp
+    txn ApplicationID
+    assert // is not creating
+    txna ApplicationArgs 1
+    btoi
+    txnas Assets
+    callsub op_into_asset
+    int 1
+    retsub
+
+__puya_arc4_router___allow_owner_campaign_route@3:
+    txn OnCompletion
+    !
+    assert // OnCompletion is NoOp
+    txn ApplicationID
+    assert // is not creating
+    txna ApplicationArgs 1
+    callsub allow_owner_campaign
+    int 1
+    retsub
+
+__puya_arc4_router___add_campaign_route@4:
+    txn OnCompletion
+    !
+    assert // OnCompletion is NoOp
+    txn ApplicationID
+    assert // is not creating
+    txna ApplicationArgs 1
+    extract 2 0
+    txna ApplicationArgs 2
+    extract 2 0
+    txna ApplicationArgs 3
+    btoi
+    callsub add_campaign
+    int 1
+    retsub
+
+__puya_arc4_router___mint_asset_route@5:
+    txn OnCompletion
+    !
+    assert // OnCompletion is NoOp
+    txn ApplicationID
+    assert // is not creating
+    txna ApplicationArgs 1
+    txna ApplicationArgs 2
+    btoi
+    txna ApplicationArgs 3
+    btoi
+    callsub mint_asset
+    int 1
+    retsub
+
+__puya_arc4_router___check_eligible_route@6:
+    txn OnCompletion
+    !
+    assert // OnCompletion is NoOp
+    txn ApplicationID
+    assert // is not creating
+    txna ApplicationArgs 1
+    txna ApplicationArgs 2
+    btoi
+    txna ApplicationArgs 3
+    btoi
+    callsub check_eligible
+    byte 0x00
+    int 0
+    uncover 2
+    setbit
+    byte 0x151f7c75
+    swap
+    concat
+    log
+    int 1
+    retsub
+
+__puya_arc4_router___owner_campaign_route@7:
+    txn OnCompletion
+    !
+    assert // OnCompletion is NoOp
+    txn ApplicationID
+    assert // is not creating
+    txna ApplicationArgs 1
+    btoi
+    callsub owner_campaign
+    byte 0x151f7c75
+    swap
+    concat
+    log
+    int 1
+    retsub
+
+__puya_arc4_router___creator_route@8:
+    txn OnCompletion
+    !
+    assert // OnCompletion is NoOp
+    txn ApplicationID
+    assert // is not creating
+    callsub creator
+    byte 0x151f7c75
+    swap
+    concat
+    log
+    int 1
+    retsub
+
+__puya_arc4_router___bare_routing@11:
+    txn OnCompletion
+    bnz __puya_arc4_router___after_if_else@15
+    txn ApplicationID
+    !
+    assert // is creating
+    int 1
+    retsub
+
+__puya_arc4_router___after_if_else@15:
+    int 0
+    retsub
+
+
+// smart_contracts.campaign.contract.Campaign.op_into_asset(asset: uint64) -> void:
+op_into_asset:
+    proto 1 0
+    int 0
+    byte "asa"
+    app_global_get_ex
+    assert // check self.asa exists
+    !
+    assert
+    frame_dig -1
+    assert
+    txn Sender
+    global CreatorAddress
+    ==
+    assert
+    byte "asa"
+    frame_dig -1
+    app_global_put
+    retsub
+
+
+// smart_contracts.campaign.contract.Campaign.allow_owner_campaign(owner_campaign: bytes) -> void:
+allow_owner_campaign:
+    proto 1 0
+    callsub only_creator
+    byte "valid_owner_campaign"
+    frame_dig -1
+    concat
+    dup
+    box_len
+    bury 1
+    !
+    assert // Owner campaign is set
+    int 1
+    itob
+    box_put
+    retsub
+
+
+// smart_contracts.campaign.contract.Campaign.only_creator() -> void:
+only_creator:
+    proto 0 0
+    global CreatorAddress
+    txn Sender
+    ==
+    assert // No accessible
+    retsub
+
+
+// smart_contracts.campaign.contract.Campaign.add_campaign(proof: bytes, root: bytes, expired_at: uint64) -> void:
+add_campaign:
+    proto 3 0
+    callsub only_valid_owner_campaign
+    txn Sender
+    dup
+    int 0
+    byte "total_campaign"
+    app_global_get_ex
+    swap
+    cover 2
+    assert // check self.total_campaign exists
+    byte "campaign_id"
+    swap
+    concat
+    dup
+    box_len
+    bury 1
+    bnz add_campaign_else_body@2
+    frame_dig 1
+    itob
+    byte 0x0001
+    swap
+    concat
+    swap
+    dup
+    box_del
+    pop
+    swap
+    box_put
+    b add_campaign_after_if_else@3
+
+add_campaign_else_body@2:
+    dup
+    box_get
+    assert // check self.campaign_id entry exists
+    extract 2 0
+    frame_dig 1
+    itob
+    concat
+    dup
+    len
+    int 8
+    /
+    itob
+    extract 6 2
+    swap
+    concat
+    dig 1
+    box_del
+    pop
+    box_put
+
+add_campaign_after_if_else@3:
+    int 0
+    byte "total_campaign"
+    app_global_get_ex
+    assert // check self.total_campaign exists
+    int 1
+    +
+    byte "total_campaign"
+    swap
+    app_global_put
+    frame_dig -3
+    len
+    itob
+    extract 6 2
+    frame_dig -3
+    concat
+    frame_dig -2
+    len
+    itob
+    extract 6 2
+    frame_dig -2
+    concat
+    swap
+    frame_dig -1
+    itob
+    swap
+    dup
+    len
+    int 44
+    +
+    itob
+    extract 6 2
+    byte 0x002c
+    dig 1
+    concat
+    frame_dig 0
+    dup
+    cover 6
+    concat
+    uncover 3
+    concat
+    dig 2
+    concat
+    dig 3
+    concat
+    frame_dig 1
+    itob
+    byte "campaign"
+    dig 1
+    concat
+    dup
+    box_del
+    pop
+    uncover 2
+    box_put
+    byte 0x002c
+    concat
+    swap
+    concat
+    uncover 3
+    concat
+    swap
+    concat
+    swap
+    concat
+    method "AddCampaignEvent(uint64,byte[],byte[],address)"
+    swap
+    concat
+    log
+    retsub
+
+
+// smart_contracts.campaign.contract.Campaign.only_valid_owner_campaign() -> void:
+only_valid_owner_campaign:
+    proto 0 0
+    txn Sender
+    byte "valid_owner_campaign"
+    txn Sender
+    concat
+    box_len
+    bury 1
+    bnz only_valid_owner_campaign_bool_true@2
+    frame_dig 0
+    global CreatorAddress
+    ==
+    bz only_valid_owner_campaign_bool_false@3
+
+only_valid_owner_campaign_bool_true@2:
+    int 1
+    b only_valid_owner_campaign_bool_merge@4
+
+only_valid_owner_campaign_bool_false@3:
+    int 0
+
+only_valid_owner_campaign_bool_merge@4:
+    assert // No accessible
+    retsub
+
+
+// smart_contracts.campaign.contract.Campaign.mint_asset(addr: bytes, amount: uint64, campaign_id: uint64) -> void:
+mint_asset:
+    proto 3 0
+    frame_dig -1
+    itob
+    dup
+    byte "campaign"
+    dig 1
+    concat
+    box_get
+    swap
+    dup
+    cover 2
+    cover 3
+    assert // check self.campaign entry exists
+    global LatestTimestamp
+    dig 1
+    extract 36 8 // on error: Index access is out of bounds
+    swap
+    itob
+    b<
+    assert // Expired
+    byte "claimed"
+    uncover 2
+    concat
+    dup
+    cover 2
+    box_get
+    assert // check self.claimed entry exists
+    frame_dig -3
+    concat
+    box_get
+    swap
+    btoi
+    swap
+    assert // check BoxMap entry exists
+    !
+    assert // User claimed
+    dup
+    int 0
+    extract_uint16
+    swap
+    dup
+    int 2
+    extract_uint16
+    dup
+    cover 3
+    swap
+    cover 2
+    substring3
+    dup
+    byte 0x0000
+    !=
+    bz mint_asset_bool_false@3
+    frame_dig 1
+    dup
+    len
+    frame_dig 3
+    swap
+    substring3
+    byte 0x0000
+    !=
+    bz mint_asset_bool_false@3
+    int 1
+    b mint_asset_bool_merge@4
+
+mint_asset_bool_false@3:
+    int 0
+
+mint_asset_bool_merge@4:
+    assert // Campaign is not found
+    frame_dig -2
+    itob
+    frame_dig -3
+    dig 1
+    callsub hash_pair
+    frame_dig 1
+    dup
+    len
+    frame_dig 3
+    swap
+    substring3
+    frame_dig 4
+    swap
+    uncover 2
+    callsub verify_asset
+    assert // Invalid data
+    frame_dig 2
+    box_get
+    assert // check self.claimed entry exists
+    frame_dig -3
+    concat
+    int 1
+    itob
+    box_put
+    itxn_begin
+    int 0
+    byte "asa"
+    app_global_get_ex
+    assert // check self.asa exists
+    txn Sender
+    itxn_field AssetReceiver
+    frame_dig -2
+    itxn_field AssetAmount
+    itxn_field XferAsset
+    int axfer
+    itxn_field TypeEnum
+    int 0
+    itxn_field Fee
+    itxn_submit
+    frame_dig -3
+    swap
+    concat
+    frame_dig 0
+    concat
+    method "MintEvent(address,uint64,uint64)"
+    swap
+    concat
+    log
+    retsub
+
+
+// smart_contracts.campaign.contract.Campaign.hash_pair(a: bytes, b: bytes) -> bytes:
+hash_pair:
+    proto 2 1
+    frame_dig -2
+    frame_dig -1
+    concat
+    sha256
+    retsub
+
+
+// smart_contracts.campaign.contract.Campaign.verify_asset(proof: bytes, root: bytes, leaf: bytes) -> uint64:
+verify_asset:
+    proto 3 1
+    int 0
+    byte "HASH_LENGTH"
+    app_global_get_ex
+    swap
+    dup
+    uncover 2
+    assert // check self.HASH_LENGTH exists
+    frame_dig -3
+    len
+    swap
+    assert // Step cannot be zero
+    int 0
+    frame_dig -1
+
+verify_asset_for_header@1:
+    frame_dig 2
+    frame_dig 1
+    <
+    bz verify_asset_after_for@4
+    int 0
+    byte "HASH_LENGTH"
+    app_global_get_ex
+    assert // check self.HASH_LENGTH exists
+    frame_dig -3
+    frame_dig 2
+    dup
+    cover 3
+    uncover 2
+    extract3
+    frame_dig 3
+    swap
+    callsub hash_pair
+    frame_bury 3
+    frame_dig 0
+    +
+    frame_bury 2
+    b verify_asset_for_header@1
+
+verify_asset_after_for@4:
+    frame_dig 3
+    frame_dig -2
+    ==
+    frame_bury 0
+    retsub
+
+
+// smart_contracts.campaign.contract.Campaign.check_eligible(addr: bytes, amount: uint64, campaign_id: uint64) -> uint64:
+check_eligible:
+    proto 3 1
+    frame_dig -1
+    itob
+    byte "campaign"
+    swap
+    concat
+    box_get
+    swap
+    dup
+    uncover 2
+    assert // check self.campaign entry exists
+    dup
+    int 0
+    extract_uint16
+    swap
+    dup
+    int 2
+    extract_uint16
+    dup
+    cover 3
+    swap
+    cover 2
+    substring3
+    dup
+    byte 0x0000
+    ==
+    bz check_eligible_after_if_else@3
+    frame_dig 0
+    dup
+    len
+    frame_dig 1
+    swap
+    substring3
+    byte 0x0000
+    ==
+    bz check_eligible_after_if_else@3
+    int 0
+    frame_bury 0
+    retsub
+
+check_eligible_after_if_else@3:
+    frame_dig -2
+    itob
+    frame_dig -3
+    swap
+    callsub hash_pair
+    frame_dig 0
+    dup
+    len
+    frame_dig 1
+    swap
+    substring3
+    frame_dig 2
+    swap
+    uncover 2
+    callsub verify_asset
+    frame_bury 0
+    retsub
+
+
+// smart_contracts.campaign.contract.Campaign.owner_campaign(campaign_id: uint64) -> bytes:
+owner_campaign:
+    proto 1 1
+    frame_dig -1
+    itob
+    byte "campaign"
+    swap
+    concat
+    box_get
+    assert // check self.campaign entry exists
+    extract 4 32 // on error: Index access is out of bounds
+    retsub
+
+
+// smart_contracts.campaign.contract.Campaign.creator() -> bytes:
+creator:
+    proto 0 1
+    global CreatorAddress
+    retsub
+
+
+// smart_contracts.campaign.contract.Campaign.__init__() -> void:
+__init__:
+    proto 0 0
+    byte "HASH_LENGTH"
+    int 32
+    app_global_put
+    byte "asa"
+    int 0
+    app_global_put
+    byte "total_campaign"
+    int 0
+    app_global_put
+    retsub

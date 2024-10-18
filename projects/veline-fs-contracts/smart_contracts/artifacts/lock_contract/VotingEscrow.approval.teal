@@ -1,0 +1,924 @@
+#pragma version 10
+
+smart_contracts.lock_contract.contract.VotingEscrow.approval_program:
+    txn ApplicationID
+    bnz main_entrypoint@2
+    callsub __init__
+
+main_entrypoint@2:
+    callsub __puya_arc4_router__
+    return
+
+
+// smart_contracts.lock_contract.contract.VotingEscrow.__puya_arc4_router__() -> uint64:
+__puya_arc4_router__:
+    proto 0 1
+    txn NumAppArgs
+    bz __puya_arc4_router___bare_routing@13
+    method "initialize(asset)void"
+    method "lock_token(address,uint64,uint64,axfer)void"
+    method "claim_token()void"
+    method "extend_lock(uint64)void"
+    method "extend_amount(uint64)void"
+    method "update_vetoken_data()void"
+    method "users_locked()address[]"
+    method "is_locked_ever(address)bool"
+    method "balance_of(address)uint64"
+    txna ApplicationArgs 0
+    match __puya_arc4_router___initialize_route@2 __puya_arc4_router___lock_token_route@3 __puya_arc4_router___claim_token_route@4 __puya_arc4_router___extend_lock_route@5 __puya_arc4_router___extend_amount_route@6 __puya_arc4_router___update_vetoken_data_route@7 __puya_arc4_router___users_locked_route@8 __puya_arc4_router___is_locked_ever_route@9 __puya_arc4_router___balance_of_route@10
+    int 0
+    retsub
+
+__puya_arc4_router___initialize_route@2:
+    txn OnCompletion
+    !
+    assert // OnCompletion is NoOp
+    txn ApplicationID
+    assert // is not creating
+    txna ApplicationArgs 1
+    btoi
+    txnas Assets
+    callsub initialize
+    int 1
+    retsub
+
+__puya_arc4_router___lock_token_route@3:
+    txn OnCompletion
+    !
+    assert // OnCompletion is NoOp
+    txn ApplicationID
+    assert // is not creating
+    txna ApplicationArgs 1
+    txna ApplicationArgs 2
+    btoi
+    txna ApplicationArgs 3
+    btoi
+    txn GroupIndex
+    int 1
+    -
+    dup
+    gtxns TypeEnum
+    int axfer
+    ==
+    assert // transaction type is axfer
+    callsub lock_token
+    int 1
+    retsub
+
+__puya_arc4_router___claim_token_route@4:
+    txn OnCompletion
+    !
+    assert // OnCompletion is NoOp
+    txn ApplicationID
+    assert // is not creating
+    callsub claim_token
+    int 1
+    retsub
+
+__puya_arc4_router___extend_lock_route@5:
+    txn OnCompletion
+    !
+    assert // OnCompletion is NoOp
+    txn ApplicationID
+    assert // is not creating
+    txna ApplicationArgs 1
+    btoi
+    callsub extend_lock
+    int 1
+    retsub
+
+__puya_arc4_router___extend_amount_route@6:
+    txn OnCompletion
+    !
+    assert // OnCompletion is NoOp
+    txn ApplicationID
+    assert // is not creating
+    txna ApplicationArgs 1
+    btoi
+    callsub extend_amount
+    int 1
+    retsub
+
+__puya_arc4_router___update_vetoken_data_route@7:
+    txn OnCompletion
+    !
+    assert // OnCompletion is NoOp
+    txn ApplicationID
+    assert // is not creating
+    callsub update_vetoken_data
+    int 1
+    retsub
+
+__puya_arc4_router___users_locked_route@8:
+    txn OnCompletion
+    !
+    assert // OnCompletion is NoOp
+    txn ApplicationID
+    assert // is not creating
+    callsub users_locked
+    byte 0x151f7c75
+    swap
+    concat
+    log
+    int 1
+    retsub
+
+__puya_arc4_router___is_locked_ever_route@9:
+    txn OnCompletion
+    !
+    assert // OnCompletion is NoOp
+    txn ApplicationID
+    assert // is not creating
+    txna ApplicationArgs 1
+    callsub is_locked_ever
+    byte 0x00
+    int 0
+    uncover 2
+    setbit
+    byte 0x151f7c75
+    swap
+    concat
+    log
+    int 1
+    retsub
+
+__puya_arc4_router___balance_of_route@10:
+    txn OnCompletion
+    !
+    assert // OnCompletion is NoOp
+    txn ApplicationID
+    assert // is not creating
+    txna ApplicationArgs 1
+    callsub balance_of
+    itob
+    byte 0x151f7c75
+    swap
+    concat
+    log
+    int 1
+    retsub
+
+__puya_arc4_router___bare_routing@13:
+    txn OnCompletion
+    bnz __puya_arc4_router___after_if_else@17
+    txn ApplicationID
+    !
+    assert // is creating
+    int 1
+    retsub
+
+__puya_arc4_router___after_if_else@17:
+    int 0
+    retsub
+
+
+// smart_contracts.lock_contract.contract.VotingEscrow.initialize(asset: uint64) -> void:
+initialize:
+    proto 1 0
+    txn Sender
+    global CreatorAddress
+    ==
+    assert
+    int 0
+    byte "asa"
+    app_global_get_ex
+    assert // check self.asa exists
+    !
+    assert
+    byte "asa"
+    frame_dig -1
+    app_global_put
+    retsub
+
+
+// smart_contracts.lock_contract.contract.VotingEscrow.lock_token(addr: bytes, lock_amount: uint64, lock_duration: uint64, payment: uint64) -> void:
+lock_token:
+    proto 4 0
+    int 0
+    dupn 2
+    txn Sender
+    dup
+    frame_dig -4
+    dig 1
+    ==
+    assert
+    global LatestTimestamp
+    swap
+    frame_dig -3
+    frame_dig -2
+    callsub _calculate_vetoken_amount
+    swap
+    byte "voting_escrow_user"
+    swap
+    concat
+    dup
+    box_len
+    bury 1
+    bz lock_token_bool_true@2
+    frame_dig 6
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    extract 32 8 // on error: Index access is out of bounds
+    byte 0x0000000000000000
+    b==
+    bz lock_token_bool_false@3
+
+lock_token_bool_true@2:
+    int 1
+    b lock_token_bool_merge@4
+
+lock_token_bool_false@3:
+    int 0
+
+lock_token_bool_merge@4:
+    assert // Already locked
+    int 0
+    byte "asa"
+    app_global_get_ex
+    assert // check self.asa exists
+    assert
+    frame_dig -1
+    gtxns AssetReceiver
+    global CurrentApplicationAddress
+    ==
+    assert
+    frame_dig -1
+    gtxns Sender
+    frame_dig 3
+    dup
+    cover 2
+    ==
+    assert
+    frame_dig -1
+    gtxns AssetSender
+    dig 1
+    ==
+    assert
+    frame_dig -1
+    gtxns XferAsset
+    int 0
+    byte "asa"
+    app_global_get_ex
+    assert // check self.asa exists
+    ==
+    assert
+    frame_dig -1
+    gtxns AssetAmount
+    frame_dig -3
+    ==
+    assert
+    int 0
+    byte "MAX_LOCK_TIME_SECONDS"
+    app_global_get_ex
+    assert // check self.MAX_LOCK_TIME_SECONDS exists
+    frame_dig -2
+    >=
+    assert // Not upper max lock time
+    int 0
+    byte "MIN_LOCK_TIME_SECONDS"
+    app_global_get_ex
+    assert // check self.MIN_LOCK_TIME_SECONDS exists
+    frame_dig -2
+    <=
+    assert // Not lower min lock time
+    frame_dig 5
+    dup
+    cover 2
+    byte 0x
+    b>
+    assert
+    dup
+    byte 0x0000000000000000
+    concat
+    byte 0x0000000000000000
+    concat
+    byte 0x0000000000000000
+    concat
+    byte 0x0000000000000000
+    concat
+    byte 0x0000000000000000
+    concat
+    frame_dig 6
+    dup
+    uncover 2
+    box_put
+    frame_dig -3
+    itob
+    dup
+    cover 2
+    frame_bury 1
+    dup
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    uncover 2
+    replace2 32
+    dig 1
+    swap
+    box_put
+    frame_dig 4
+    itob
+    swap
+    dup
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    dig 2
+    replace2 40
+    dig 1
+    swap
+    box_put
+    frame_dig -2
+    itob
+    dup
+    cover 2
+    frame_bury 2
+    dup
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    uncover 2
+    replace2 48
+    dig 1
+    swap
+    box_put
+    dig 3
+    len
+    int 8
+    <=
+    assert // overflow
+    int 8
+    bzero
+    dig 1
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    dig 5
+    uncover 2
+    b|
+    replace2 56
+    dig 1
+    swap
+    box_put
+    dup
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    uncover 2
+    replace2 64
+    box_put
+    int 0
+    byte "total_locked"
+    app_global_get_ex
+    assert // check self.total_locked exists
+    frame_dig -3
+    +
+    byte "total_locked"
+    swap
+    app_global_put
+    int 0
+    byte "total_vetoken"
+    app_global_get_ex
+    assert // check self.total_vetoken exists
+    uncover 2
+    btoi
+    +
+    byte "total_vetoken"
+    swap
+    app_global_put
+    byte "locked_user"
+    swap
+    concat
+    dup
+    frame_bury 0
+    box_len
+    bury 1
+    bnz lock_token_after_if_else@6
+    int 0
+    byte "user_locked"
+    app_global_get_ex
+    assert // check self.user_locked exists
+    extract 2 0
+    frame_dig 3
+    concat
+    dup
+    len
+    int 32
+    /
+    itob
+    extract 6 2
+    swap
+    concat
+    byte "user_locked"
+    swap
+    app_global_put
+    int 0
+    byte "total_user"
+    app_global_get_ex
+    assert // check self.total_user exists
+    int 1
+    +
+    byte "total_user"
+    swap
+    app_global_put
+    int 1
+    itob
+    frame_dig 0
+    swap
+    box_put
+
+lock_token_after_if_else@6:
+    frame_dig 3
+    frame_dig 1
+    concat
+    frame_dig 2
+    concat
+    method "LockEvent(address,uint64,uint64)"
+    swap
+    concat
+    log
+    retsub
+
+
+// smart_contracts.lock_contract.contract.VotingEscrow._calculate_vetoken_amount(amount_locked: uint64, time_remaining: uint64) -> bytes:
+_calculate_vetoken_amount:
+    proto 2 1
+    frame_dig -2
+    itob
+    frame_dig -1
+    itob
+    b*
+    dup
+    byte 0x
+    b==
+    bz _calculate_vetoken_amount_after_if_else@2
+    byte 0x
+    swap
+    retsub
+
+_calculate_vetoken_amount_after_if_else@2:
+    int 0
+    byte "SECONDS_PER_YEAR"
+    app_global_get_ex
+    assert // check self.SECONDS_PER_YEAR exists
+    itob
+    frame_dig 0
+    swap
+    b/
+    swap
+    retsub
+
+
+// smart_contracts.lock_contract.contract.VotingEscrow.claim_token() -> void:
+claim_token:
+    proto 0 0
+    txn Sender
+    byte "voting_escrow_user"
+    dig 1
+    concat
+    dup
+    box_len
+    bury 1
+    assert // Not locked yet
+    dup
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    extract 40 8 // on error: Index access is out of bounds
+    btoi
+    swap
+    dup
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    extract 48 8 // on error: Index access is out of bounds
+    btoi
+    uncover 2
+    swap
+    callsub get_lock_end_time
+    pop
+    dup
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    extract 32 8 // on error: Index access is out of bounds
+    swap
+    dup
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    extract 32 8 // on error: Index access is out of bounds
+    byte 0x0000000000000000
+    b>
+    assert // Not found any locked
+    dig 1
+    byte 0x0000000000000000
+    b>
+    assert
+    int 0
+    byte "total_locked"
+    app_global_get_ex
+    assert // check self.total_locked exists
+    dig 2
+    btoi
+    dup
+    cover 2
+    >=
+    assert
+    int 0
+    byte "total_locked"
+    app_global_get_ex
+    assert // check self.total_locked exists
+    dig 1
+    -
+    byte "total_locked"
+    swap
+    app_global_put
+    dig 1
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    byte 0x0000000000000000
+    replace2 32
+    dig 2
+    swap
+    box_put
+    dig 1
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    byte 0x0000000000000000
+    replace2 40
+    dig 2
+    swap
+    box_put
+    dig 1
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    byte 0x0000000000000000
+    replace2 48
+    dig 2
+    swap
+    box_put
+    dig 1
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    byte 0x0000000000000000
+    replace2 64
+    uncover 2
+    swap
+    box_put
+    itxn_begin
+    int 0
+    byte "asa"
+    app_global_get_ex
+    assert // check self.asa exists
+    dig 3
+    itxn_field AssetReceiver
+    itxn_field XferAsset
+    itxn_field AssetAmount
+    int axfer
+    itxn_field TypeEnum
+    int 0
+    itxn_field Fee
+    itxn_submit
+    concat
+    method "ClaimEvent(address,uint64)"
+    swap
+    concat
+    log
+    retsub
+
+
+// smart_contracts.lock_contract.contract.VotingEscrow.get_lock_end_time(lock_start_time: uint64, lock_duration: uint64) -> uint64:
+get_lock_end_time:
+    proto 2 1
+    frame_dig -2
+    frame_dig -1
+    +
+    retsub
+
+
+// smart_contracts.lock_contract.contract.VotingEscrow.extend_lock(extend_lock_duration: uint64) -> void:
+extend_lock:
+    proto 1 0
+    txn Sender
+    byte "voting_escrow_user"
+    dig 1
+    concat
+    dup
+    box_len
+    bury 1
+    assert // Not locked yet
+    dup
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    extract 40 8 // on error: Index access is out of bounds
+    btoi
+    swap
+    dup
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    extract 48 8 // on error: Index access is out of bounds
+    btoi
+    uncover 2
+    swap
+    callsub get_lock_end_time
+    swap
+    global LatestTimestamp
+    dig 1
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    extract 32 8 // on error: Index access is out of bounds
+    byte 0x0000000000000000
+    b>
+    assert // Not found any locked
+    uncover 2
+    <
+    assert // Expired
+    dup
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    extract 48 8 // on error: Index access is out of bounds
+    frame_dig -1
+    itob
+    dup
+    cover 2
+    b<
+    assert // Extend duration must be higher than current duration
+    dig 1
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    dig 1
+    replace2 48
+    dig 2
+    swap
+    box_put
+    swap
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    callsub _update_vetoken_data
+    pop
+    concat
+    method "ExtendLockEvent(address,uint64)"
+    swap
+    concat
+    log
+    retsub
+
+
+// smart_contracts.lock_contract.contract.VotingEscrow._update_vetoken_data(user: bytes) -> bytes:
+_update_vetoken_data:
+    proto 1 1
+    global LatestTimestamp
+    dup
+    frame_dig -1
+    extract 64 8 // on error: Index access is out of bounds
+    btoi
+    dig 1
+    swap
+    -
+    swap
+    frame_dig -1
+    extract 40 8 // on error: Index access is out of bounds
+    btoi
+    frame_dig -1
+    extract 48 8 // on error: Index access is out of bounds
+    btoi
+    callsub get_lock_end_time
+    dup
+    cover 3
+    swap
+    -
+    swap
+    frame_dig -1
+    swap
+    bz _update_vetoken_data_after_if_else@5
+    int 0
+    byte "total_vetoken"
+    app_global_get_ex
+    assert // check self.total_vetoken exists
+    frame_dig -1
+    extract 56 8 // on error: Index access is out of bounds
+    btoi
+    -
+    byte "total_vetoken"
+    swap
+    app_global_put
+    frame_dig 0
+    frame_dig 1
+    >
+    bz _update_vetoken_data_else_body@3
+    frame_dig -1
+    byte 0x0000000000000000
+    replace2 56
+    frame_bury -1
+    b _update_vetoken_data_after_if_else@4
+
+_update_vetoken_data_else_body@3:
+    frame_dig -1
+    extract 32 8 // on error: Index access is out of bounds
+    btoi
+    frame_dig 2
+    callsub _calculate_vetoken_amount
+    dup
+    len
+    int 8
+    <=
+    assert // overflow
+    int 8
+    bzero
+    b|
+    frame_dig -1
+    swap
+    replace2 56
+    frame_bury -1
+    int 0
+    byte "total_vetoken"
+    app_global_get_ex
+    assert // check self.total_vetoken exists
+    frame_dig -1
+    extract 56 8 // on error: Index access is out of bounds
+    btoi
+    +
+    byte "total_vetoken"
+    swap
+    app_global_put
+
+_update_vetoken_data_after_if_else@4:
+    frame_dig 0
+    itob
+    frame_dig -1
+    swap
+    replace2 64
+    dup
+    frame_bury -1
+    frame_bury 3
+
+_update_vetoken_data_after_if_else@5:
+    frame_dig 3
+    dup
+    frame_bury -1
+    extract 0 32 // on error: Index access is out of bounds
+    frame_dig -1
+    concat
+    method "UpdateDataEvent(address,(address,uint64,uint64,uint64,uint64,uint64))"
+    swap
+    concat
+    log
+    frame_dig -1
+    frame_bury 0
+    retsub
+
+
+// smart_contracts.lock_contract.contract.VotingEscrow.extend_amount(amount: uint64) -> void:
+extend_amount:
+    proto 1 0
+    txn Sender
+    byte "voting_escrow_user"
+    dig 1
+    concat
+    dup
+    box_len
+    bury 1
+    assert // Not locked yet
+    dup
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    extract 40 8 // on error: Index access is out of bounds
+    btoi
+    swap
+    dup
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    extract 48 8 // on error: Index access is out of bounds
+    btoi
+    uncover 2
+    swap
+    callsub get_lock_end_time
+    swap
+    global LatestTimestamp
+    frame_dig -1
+    assert // Extended amount must be larger than 0
+    dig 1
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    extract 32 8 // on error: Index access is out of bounds
+    byte 0x0000000000000000
+    b>
+    assert // Not found any locked
+    uncover 2
+    <
+    assert // Expired
+    dup
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    extract 32 8 // on error: Index access is out of bounds
+    btoi
+    frame_dig -1
+    +
+    itob
+    dig 1
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    swap
+    replace2 32
+    dig 1
+    swap
+    box_put
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    callsub _update_vetoken_data
+    pop
+    frame_dig -1
+    itob
+    concat
+    method "ExtendAmountEvent(address,uint64)"
+    swap
+    concat
+    log
+    retsub
+
+
+// smart_contracts.lock_contract.contract.VotingEscrow.update_vetoken_data() -> void:
+update_vetoken_data:
+    proto 0 0
+    byte "voting_escrow_user"
+    txn Sender
+    concat
+    dup
+    box_len
+    bury 1
+    assert // Not locked yet
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    callsub _update_vetoken_data
+    pop
+    retsub
+
+
+// smart_contracts.lock_contract.contract.VotingEscrow.users_locked() -> bytes:
+users_locked:
+    proto 0 1
+    int 0
+    byte "user_locked"
+    app_global_get_ex
+    assert // check self.user_locked exists
+    retsub
+
+
+// smart_contracts.lock_contract.contract.VotingEscrow.is_locked_ever(addr: bytes) -> uint64:
+is_locked_ever:
+    proto 1 1
+    byte "locked_user"
+    frame_dig -1
+    concat
+    box_get
+    swap
+    btoi
+    swap
+    assert // check self.locked_user entry exists
+    retsub
+
+
+// smart_contracts.lock_contract.contract.VotingEscrow.balance_of(user: bytes) -> uint64:
+balance_of:
+    proto 1 1
+    byte "voting_escrow_user"
+    frame_dig -1
+    concat
+    dup
+    box_len
+    bury 1
+    bnz balance_of_after_if_else@2
+    int 0
+    swap
+    retsub
+
+balance_of_after_if_else@2:
+    frame_dig 0
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    extract 56 8 // on error: Index access is out of bounds
+    btoi
+    swap
+    retsub
+
+
+// smart_contracts.lock_contract.contract.VotingEscrow.__init__() -> void:
+__init__:
+    proto 0 0
+    byte "total_locked"
+    int 0
+    app_global_put
+    byte "total_vetoken"
+    int 0
+    app_global_put
+    byte "total_user"
+    int 0
+    app_global_put
+    byte "user_locked"
+    byte 0x0000
+    app_global_put
+    byte "asa"
+    int 0
+    app_global_put
+    byte "SECONDS_PER_YEAR"
+    int 31536000
+    app_global_put
+    byte "MIN_LOCK_TIME_SECONDS"
+    int 604800
+    app_global_put
+    byte "MAX_LOCK_TIME_SECONDS"
+    int 126144000
+    app_global_put
+    retsub

@@ -14,16 +14,15 @@ def deploy(
     app_spec: algokit_utils.ApplicationSpecification,
     deployer: algokit_utils.Account,
 ) -> None:
-    from smart_contracts.artifacts.veline_contract.veline_contract_client import (
-        VelineContractClient,
+    from smart_contracts.artifacts.campaign.campaign_client import (
+        CampaignClient,
     )
 
-    app_client = VelineContractClient(
+    app_client = CampaignClient(
         algod_client,
         creator=deployer,
         indexer_client=indexer_client,
     )
-
     app_client.deploy(
         on_schema_break=algokit_utils.OnSchemaBreak.AppendApp,
         on_update=algokit_utils.OnUpdate.AppendApp,
