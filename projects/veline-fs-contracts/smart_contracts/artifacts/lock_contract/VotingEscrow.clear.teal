@@ -1,5 +1,0 @@
-#pragma version 10
-
-smart_contracts.lock_contract.contract.VotingEscrow.clear_state_program:
-    int 1
-    return

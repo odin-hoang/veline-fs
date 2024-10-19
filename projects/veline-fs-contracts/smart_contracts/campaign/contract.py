@@ -188,6 +188,8 @@ class Campaign(ARC4Contract):
 
     @abimethod
     def owner_campaign(self, campaign_id: UInt64) -> Address:
+        if campaign_id not in self.campaign:
+            return Address()
         return self.campaign[campaign_id].owner
 
     @abimethod

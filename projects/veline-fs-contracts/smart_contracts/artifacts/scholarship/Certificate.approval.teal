@@ -1,6 +1,6 @@
 #pragma version 10
 
-smart_contracts.lock_contract.contract.VotingEscrow.approval_program:
+smart_contracts.scholarship.contract.Certificate.approval_program:
     txn ApplicationID
     bnz main_entrypoint@2
     callsub __init__
@@ -10,22 +10,26 @@ main_entrypoint@2:
     return
 
 
-// smart_contracts.lock_contract.contract.VotingEscrow.__puya_arc4_router__() -> uint64:
+// smart_contracts.scholarship.contract.Certificate.__puya_arc4_router__() -> uint64:
 __puya_arc4_router__:
     proto 0 1
     txn NumAppArgs
-    bz __puya_arc4_router___bare_routing@13
+    bz __puya_arc4_router___bare_routing@17
     method "initialize(asset)void"
     method "lock_token(address,uint64,uint64,axfer)void"
     method "claim_token()void"
     method "extend_lock(uint64)void"
     method "extend_amount(uint64)void"
     method "update_vetoken_data()void"
+    method "add_leader_scholarship()void"
+    method "add_scholarship(asset,uint64,uint64,axfer)uint64"
+    method "pay_scholarship(uint64)void"
     method "users_locked()address[]"
     method "is_locked_ever(address)bool"
+    method "profile_lock_user(address)(address,uint64,uint64,uint64,uint64,uint64,uint64)"
     method "balance_of(address)uint64"
     txna ApplicationArgs 0
-    match __puya_arc4_router___initialize_route@2 __puya_arc4_router___lock_token_route@3 __puya_arc4_router___claim_token_route@4 __puya_arc4_router___extend_lock_route@5 __puya_arc4_router___extend_amount_route@6 __puya_arc4_router___update_vetoken_data_route@7 __puya_arc4_router___users_locked_route@8 __puya_arc4_router___is_locked_ever_route@9 __puya_arc4_router___balance_of_route@10
+    match __puya_arc4_router___initialize_route@2 __puya_arc4_router___lock_token_route@3 __puya_arc4_router___claim_token_route@4 __puya_arc4_router___extend_lock_route@5 __puya_arc4_router___extend_amount_route@6 __puya_arc4_router___update_vetoken_data_route@7 __puya_arc4_router___add_leader_scholarship_route@8 __puya_arc4_router___add_scholarship_route@9 __puya_arc4_router___pay_scholarship_route@10 __puya_arc4_router___users_locked_route@11 __puya_arc4_router___is_locked_ever_route@12 __puya_arc4_router___profile_lock_user_route@13 __puya_arc4_router___balance_of_route@14
     int 0
     retsub
 
@@ -109,7 +113,59 @@ __puya_arc4_router___update_vetoken_data_route@7:
     int 1
     retsub
 
-__puya_arc4_router___users_locked_route@8:
+__puya_arc4_router___add_leader_scholarship_route@8:
+    txn OnCompletion
+    !
+    assert // OnCompletion is NoOp
+    txn ApplicationID
+    assert // is not creating
+    callsub add_leader_scholarship
+    int 1
+    retsub
+
+__puya_arc4_router___add_scholarship_route@9:
+    txn OnCompletion
+    !
+    assert // OnCompletion is NoOp
+    txn ApplicationID
+    assert // is not creating
+    txna ApplicationArgs 1
+    btoi
+    txnas Assets
+    txna ApplicationArgs 2
+    btoi
+    txna ApplicationArgs 3
+    btoi
+    txn GroupIndex
+    int 1
+    -
+    dup
+    gtxns TypeEnum
+    int axfer
+    ==
+    assert // transaction type is axfer
+    callsub add_scholarship
+    itob
+    byte 0x151f7c75
+    swap
+    concat
+    log
+    int 1
+    retsub
+
+__puya_arc4_router___pay_scholarship_route@10:
+    txn OnCompletion
+    !
+    assert // OnCompletion is NoOp
+    txn ApplicationID
+    assert // is not creating
+    txna ApplicationArgs 1
+    btoi
+    callsub pay_scholarship
+    int 1
+    retsub
+
+__puya_arc4_router___users_locked_route@11:
     txn OnCompletion
     !
     assert // OnCompletion is NoOp
@@ -123,7 +179,7 @@ __puya_arc4_router___users_locked_route@8:
     int 1
     retsub
 
-__puya_arc4_router___is_locked_ever_route@9:
+__puya_arc4_router___is_locked_ever_route@12:
     txn OnCompletion
     !
     assert // OnCompletion is NoOp
@@ -142,7 +198,22 @@ __puya_arc4_router___is_locked_ever_route@9:
     int 1
     retsub
 
-__puya_arc4_router___balance_of_route@10:
+__puya_arc4_router___profile_lock_user_route@13:
+    txn OnCompletion
+    !
+    assert // OnCompletion is NoOp
+    txn ApplicationID
+    assert // is not creating
+    txna ApplicationArgs 1
+    callsub profile_lock_user
+    byte 0x151f7c75
+    swap
+    concat
+    log
+    int 1
+    retsub
+
+__puya_arc4_router___balance_of_route@14:
     txn OnCompletion
     !
     assert // OnCompletion is NoOp
@@ -158,21 +229,21 @@ __puya_arc4_router___balance_of_route@10:
     int 1
     retsub
 
-__puya_arc4_router___bare_routing@13:
+__puya_arc4_router___bare_routing@17:
     txn OnCompletion
-    bnz __puya_arc4_router___after_if_else@17
+    bnz __puya_arc4_router___after_if_else@21
     txn ApplicationID
     !
     assert // is creating
     int 1
     retsub
 
-__puya_arc4_router___after_if_else@17:
+__puya_arc4_router___after_if_else@21:
     int 0
     retsub
 
 
-// smart_contracts.lock_contract.contract.VotingEscrow.initialize(asset: uint64) -> void:
+// smart_contracts.scholarship.contract.Certificate.initialize(asset: uint64) -> void:
 initialize:
     proto 1 0
     txn Sender
@@ -191,7 +262,7 @@ initialize:
     retsub
 
 
-// smart_contracts.lock_contract.contract.VotingEscrow.lock_token(addr: bytes, lock_amount: uint64, lock_duration: uint64, payment: uint64) -> void:
+// smart_contracts.scholarship.contract.Certificate.lock_token(addr: bytes, lock_amount: uint64, lock_duration: uint64, payment: uint64) -> void:
 lock_token:
     proto 4 0
     int 0
@@ -288,6 +359,8 @@ lock_token_bool_merge@4:
     b>
     assert
     dup
+    byte 0x0000000000000000
+    concat
     byte 0x0000000000000000
     concat
     byte 0x0000000000000000
@@ -435,7 +508,7 @@ lock_token_after_if_else@6:
     retsub
 
 
-// smart_contracts.lock_contract.contract.VotingEscrow._calculate_vetoken_amount(amount_locked: uint64, time_remaining: uint64) -> bytes:
+// smart_contracts.scholarship.contract.Certificate._calculate_vetoken_amount(amount_locked: uint64, time_remaining: uint64) -> bytes:
 _calculate_vetoken_amount:
     proto 2 1
     frame_dig -2
@@ -464,7 +537,7 @@ _calculate_vetoken_amount_after_if_else@2:
     retsub
 
 
-// smart_contracts.lock_contract.contract.VotingEscrow.claim_token() -> void:
+// smart_contracts.scholarship.contract.Certificate.claim_token() -> void:
 claim_token:
     proto 0 0
     txn Sender
@@ -489,7 +562,9 @@ claim_token:
     uncover 2
     swap
     callsub get_lock_end_time
-    pop
+    swap
+    global LatestTimestamp
+    swap
     dup
     box_get
     assert // check self.voting_escrow_user entry exists
@@ -502,6 +577,10 @@ claim_token:
     byte 0x0000000000000000
     b>
     assert // Not found any locked
+    uncover 2
+    uncover 3
+    >
+    assert // Not expired
     dig 1
     byte 0x0000000000000000
     b>
@@ -554,8 +633,22 @@ claim_token:
     assert // check self.voting_escrow_user entry exists
     byte 0x0000000000000000
     replace2 64
+    dig 2
+    swap
+    box_put
+    dig 1
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    byte 0x0000000000000000
+    replace2 56
     uncover 2
     swap
+    box_put
+    byte "locked_user"
+    dig 3
+    concat
+    int 0
+    itob
     box_put
     itxn_begin
     int 0
@@ -579,7 +672,7 @@ claim_token:
     retsub
 
 
-// smart_contracts.lock_contract.contract.VotingEscrow.get_lock_end_time(lock_start_time: uint64, lock_duration: uint64) -> uint64:
+// smart_contracts.scholarship.contract.Certificate.get_lock_end_time(lock_start_time: uint64, lock_duration: uint64) -> uint64:
 get_lock_end_time:
     proto 2 1
     frame_dig -2
@@ -588,7 +681,7 @@ get_lock_end_time:
     retsub
 
 
-// smart_contracts.lock_contract.contract.VotingEscrow.extend_lock(extend_lock_duration: uint64) -> void:
+// smart_contracts.scholarship.contract.Certificate.extend_lock(extend_lock_duration: uint64) -> void:
 extend_lock:
     proto 1 0
     txn Sender
@@ -656,7 +749,7 @@ extend_lock:
     retsub
 
 
-// smart_contracts.lock_contract.contract.VotingEscrow._update_vetoken_data(user: bytes) -> bytes:
+// smart_contracts.scholarship.contract.Certificate._update_vetoken_data(user: bytes) -> bytes:
 _update_vetoken_data:
     proto 1 1
     global LatestTimestamp
@@ -751,7 +844,7 @@ _update_vetoken_data_after_if_else@5:
     extract 0 32 // on error: Index access is out of bounds
     frame_dig -1
     concat
-    method "UpdateDataEvent(address,(address,uint64,uint64,uint64,uint64,uint64))"
+    method "UpdateDataEvent(address,(address,uint64,uint64,uint64,uint64,uint64,uint64))"
     swap
     concat
     log
@@ -760,7 +853,7 @@ _update_vetoken_data_after_if_else@5:
     retsub
 
 
-// smart_contracts.lock_contract.contract.VotingEscrow.extend_amount(amount: uint64) -> void:
+// smart_contracts.scholarship.contract.Certificate.extend_amount(amount: uint64) -> void:
 extend_amount:
     proto 1 0
     txn Sender
@@ -829,7 +922,7 @@ extend_amount:
     retsub
 
 
-// smart_contracts.lock_contract.contract.VotingEscrow.update_vetoken_data() -> void:
+// smart_contracts.scholarship.contract.Certificate.update_vetoken_data() -> void:
 update_vetoken_data:
     proto 0 0
     byte "voting_escrow_user"
@@ -846,33 +939,323 @@ update_vetoken_data:
     retsub
 
 
-// smart_contracts.lock_contract.contract.VotingEscrow.users_locked() -> bytes:
-users_locked:
-    proto 0 1
+// smart_contracts.scholarship.contract.Certificate.add_leader_scholarship() -> void:
+add_leader_scholarship:
+    proto 0 0
+    byte "leader_scholarship"
+    txn Sender
+    concat
+    dup
+    box_len
+    bury 1
+    bz add_leader_scholarship_bool_true@2
+    frame_dig 0
+    box_get
+    swap
+    btoi
+    swap
+    assert // check self.leader_scholarship entry exists
+    bnz add_leader_scholarship_bool_false@3
+
+add_leader_scholarship_bool_true@2:
+    int 1
+    b add_leader_scholarship_bool_merge@4
+
+add_leader_scholarship_bool_false@3:
     int 0
-    byte "user_locked"
-    app_global_get_ex
-    assert // check self.user_locked exists
+
+add_leader_scholarship_bool_merge@4:
+    assert
+    int 1
+    itob
+    frame_dig 0
+    swap
+    box_put
     retsub
 
 
-// smart_contracts.lock_contract.contract.VotingEscrow.is_locked_ever(addr: bytes) -> uint64:
-is_locked_ever:
-    proto 1 1
-    byte "locked_user"
+// smart_contracts.scholarship.contract.Certificate.add_scholarship(asset: uint64, amount: uint64, value: uint64, axfer: uint64) -> uint64:
+add_scholarship:
+    proto 4 1
+    txn Sender
+    int 0
+    byte "total_scholarship"
+    app_global_get_ex
+    swap
+    cover 2
+    assert // check self.total_scholarship exists
+    dup
+    callsub only_leader_scholarship
+    frame_dig -3
+    assert
+    frame_dig -2
+    assert
+    dig 1
+    itob
+    byte "scholarship"
+    dig 1
+    concat
+    dup
+    box_len
+    bury 1
+    !
+    assert
+    frame_dig -1
+    gtxns XferAsset
+    frame_dig -4
+    ==
+    assert
+    frame_dig -1
+    gtxns AssetAmount
+    frame_dig -3
+    ==
+    assert
+    frame_dig -1
+    gtxns AssetSender
+    dig 3
+    ==
+    assert
+    global CreatorAddress
+    frame_dig -1
+    gtxns AssetReceiver
+    ==
+    assert
+    int 0
+    byte "total_scholarship"
+    app_global_get_ex
+    assert // check self.total_scholarship exists
+    int 1
+    +
+    byte "total_scholarship"
+    swap
+    app_global_put
+    frame_dig -3
+    itob
+    frame_dig -2
+    itob
+    swap
+    frame_dig -4
+    itob
+    cover 2
+    uncover 4
+    swap
+    concat
+    swap
+    concat
+    swap
+    concat
+    uncover 2
+    concat
+    box_put
+    retsub
+
+
+// smart_contracts.scholarship.contract.Certificate.only_leader_scholarship(sender_address: bytes) -> void:
+only_leader_scholarship:
+    proto 1 0
+    byte "leader_scholarship"
     frame_dig -1
     concat
     box_get
     swap
     btoi
     swap
-    assert // check self.locked_user entry exists
+    assert // check self.leader_scholarship entry exists
+    bnz only_leader_scholarship_bool_true@2
+    frame_dig -1
+    global CreatorAddress
+    ==
+    bz only_leader_scholarship_bool_false@3
+
+only_leader_scholarship_bool_true@2:
+    int 1
+    b only_leader_scholarship_bool_merge@4
+
+only_leader_scholarship_bool_false@3:
+    int 0
+
+only_leader_scholarship_bool_merge@4:
+    assert
     retsub
 
 
-// smart_contracts.lock_contract.contract.VotingEscrow.balance_of(user: bytes) -> uint64:
+// smart_contracts.scholarship.contract.Certificate.pay_scholarship(scholarship_id: uint64) -> void:
+pay_scholarship:
+    proto 1 0
+    byte ""
+    dup
+    txn Sender
+    dup
+    int 0
+    byte "total_scholarship"
+    app_global_get_ex
+    assert // check self.total_scholarship exists
+    frame_dig -1
+    >
+    assert
+    frame_dig -1
+    itob
+    dup
+    cover 2
+    byte "scholarship"
+    swap
+    concat
+    dup
+    cover 2
+    dup
+    box_len
+    bury 1
+    assert
+    byte "voting_escrow_user"
+    dig 2
+    concat
+    dup
+    cover 3
+    dup
+    box_len
+    bury 1
+    assert
+    swap
+    box_get
+    swap
+    dup
+    cover 3
+    cover 4
+    assert // check self.scholarship entry exists
+    dup
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    callsub _update_vetoken_data
+    pop
+    box_get
+    swap
+    dup
+    cover 3
+    cover 4
+    assert // check self.voting_escrow_user entry exists
+    uncover 2
+    callsub balance_of
+    dig 1
+    extract 16 8 // on error: Index access is out of bounds
+    dup
+    cover 2
+    cover 4
+    itob
+    b<=
+    assert
+    extract 8 8 // on error: Index access is out of bounds
+    dup
+    cover 2
+    byte 0x0000000000000001
+    b>=
+    assert
+    extract 32 8 // on error: Index access is out of bounds
+    byte 0x0000000000000000
+    b>
+    bz pay_scholarship_bool_false@3
+    frame_dig 7
+    extract 56 8 // on error: Index access is out of bounds
+    byte 0x0000000000000000
+    b>
+    bz pay_scholarship_bool_false@3
+    int 1
+    b pay_scholarship_bool_merge@4
+
+pay_scholarship_bool_false@3:
+    int 0
+
+pay_scholarship_bool_merge@4:
+    assert
+    frame_dig 6
+    extract 24 8 // on error: Index access is out of bounds
+    btoi
+    dup
+    frame_bury 0
+    global CurrentApplicationAddress
+    swap
+    asset_holding_get AssetBalance
+    swap
+    dup
+    cover 2
+    frame_bury 1
+    assert // account opted into asset
+    int 1
+    >=
+    bz pay_scholarship_bool_false@7
+    frame_dig 1
+    itob
+    frame_dig 9
+    b==
+    bz pay_scholarship_bool_false@7
+    int 1
+    b pay_scholarship_bool_merge@8
+
+pay_scholarship_bool_false@7:
+    int 0
+
+pay_scholarship_bool_merge@8:
+    assert
+    frame_dig 9
+    btoi
+    int 1
+    -
+    itob
+    frame_dig 4
+    dup
+    cover 2
+    box_get
+    assert // check self.scholarship entry exists
+    swap
+    replace2 8
+    box_put
+    frame_dig 7
+    extract 72 8 // on error: Index access is out of bounds
+    btoi
+    frame_dig 8
+    btoi
+    +
+    itob
+    frame_dig 5
+    dup
+    cover 2
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    swap
+    replace2 72
+    box_put
+    itxn_begin
+    global CurrentApplicationAddress
+    itxn_field AssetSender
+    int 1
+    itxn_field AssetAmount
+    frame_dig 2
+    dup
+    itxn_field AssetCloseTo
+    dup
+    itxn_field AssetReceiver
+    frame_dig 0
+    itxn_field XferAsset
+    int axfer
+    itxn_field TypeEnum
+    int 0
+    itxn_field Fee
+    itxn_submit
+    frame_dig 3
+    swap
+    concat
+    method "PayScholarship(uint64,address)"
+    swap
+    concat
+    log
+    retsub
+
+
+// smart_contracts.scholarship.contract.Certificate.balance_of(user: bytes) -> uint64:
 balance_of:
     proto 1 1
+    int 0
+    byte ""
+    dup
     byte "voting_escrow_user"
     frame_dig -1
     concat
@@ -881,20 +1264,119 @@ balance_of:
     bury 1
     bnz balance_of_after_if_else@2
     int 0
-    swap
+    frame_bury 0
     retsub
 
 balance_of_after_if_else@2:
+    frame_dig 3
+    box_get
+    swap
+    dup
+    cover 2
+    frame_bury 0
+    assert // check self.voting_escrow_user entry exists
+    global LatestTimestamp
+    dup
+    cover 2
+    frame_bury 1
+    dup
+    extract 40 8 // on error: Index access is out of bounds
+    btoi
+    swap
+    extract 48 8 // on error: Index access is out of bounds
+    btoi
+    callsub get_lock_end_time
+    dup
+    frame_bury 2
+    >
+    bz balance_of_after_if_else@4
+    int 0
+    frame_bury 0
+    retsub
+
+balance_of_after_if_else@4:
+    frame_dig 2
+    frame_dig 1
+    -
+    frame_dig 0
+    dup
+    cover 2
+    extract 32 8 // on error: Index access is out of bounds
+    btoi
+    swap
+    callsub _calculate_vetoken_amount
+    swap
+    extract 72 8 // on error: Index access is out of bounds
+    btoi
+    itob
+    b-
+    btoi
+    frame_bury 0
+    retsub
+
+
+// smart_contracts.scholarship.contract.Certificate.users_locked() -> bytes:
+users_locked:
+    proto 0 1
+    int 0
+    byte "user_locked"
+    app_global_get_ex
+    assert // check self.user_locked exists
+    int 0
+    extract_uint16
+    bnz users_locked_after_if_else@2
+    byte 0x0000
+    retsub
+
+users_locked_after_if_else@2:
+    int 0
+    byte "user_locked"
+    app_global_get_ex
+    assert // check self.user_locked exists
+    retsub
+
+
+// smart_contracts.scholarship.contract.Certificate.is_locked_ever(addr: bytes) -> uint64:
+is_locked_ever:
+    proto 1 1
+    byte "locked_user"
+    frame_dig -1
+    concat
+    dup
+    box_len
+    bury 1
+    bnz is_locked_ever_after_if_else@2
+    int 0
+    swap
+    retsub
+
+is_locked_ever_after_if_else@2:
     frame_dig 0
     box_get
-    assert // check self.voting_escrow_user entry exists
-    extract 56 8 // on error: Index access is out of bounds
+    swap
     btoi
+    swap
+    assert // check self.locked_user entry exists
     swap
     retsub
 
 
-// smart_contracts.lock_contract.contract.VotingEscrow.__init__() -> void:
+// smart_contracts.scholarship.contract.Certificate.profile_lock_user(addr: bytes) -> bytes:
+profile_lock_user:
+    proto 1 1
+    byte "voting_escrow_user"
+    frame_dig -1
+    concat
+    dup
+    box_len
+    bury 1
+    assert
+    box_get
+    assert // check self.voting_escrow_user entry exists
+    retsub
+
+
+// smart_contracts.scholarship.contract.Certificate.__init__() -> void:
 __init__:
     proto 0 0
     byte "total_locked"
@@ -920,5 +1402,8 @@ __init__:
     app_global_put
     byte "MAX_LOCK_TIME_SECONDS"
     int 126144000
+    app_global_put
+    byte "total_scholarship"
+    int 0
     app_global_put
     retsub

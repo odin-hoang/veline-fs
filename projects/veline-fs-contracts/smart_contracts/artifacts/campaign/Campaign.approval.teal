@@ -601,9 +601,20 @@ owner_campaign:
     byte "campaign"
     swap
     concat
+    dup
+    box_len
+    bury 1
+    bnz owner_campaign_after_if_else@2
+    global ZeroAddress
+    swap
+    retsub
+
+owner_campaign_after_if_else@2:
+    frame_dig 0
     box_get
     assert // check self.campaign entry exists
     extract 4 32 // on error: Index access is out of bounds
+    swap
     retsub
 
 

@@ -1,5 +1,0 @@
-#pragma version 10
-
-smart_contracts.veline_contract.contract.VelineContract.clear_state_program:
-    int 1
-    return
