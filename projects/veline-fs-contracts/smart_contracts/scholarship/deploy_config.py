@@ -14,11 +14,11 @@ def deploy(
     app_spec: algokit_utils.ApplicationSpecification,
     deployer: algokit_utils.Account,
 ) -> None:
-    from smart_contracts.artifacts.lock_contract.lock_contract_client import (
-        LockContractClient,
+    from smart_contracts.artifacts.lock_contract.voting_escrow_client import (
+        VotingEscrowClient,
     )
 
-    app_client = LockContractClient(
+    app_client = VotingEscrowClient(
         algod_client,
         creator=deployer,
         indexer_client=indexer_client,
@@ -27,9 +27,9 @@ def deploy(
         on_schema_break=algokit_utils.OnSchemaBreak.AppendApp,
         on_update=algokit_utils.OnUpdate.AppendApp,
     )
-    name = "world"
-    response = app_client.hello(name=name)
-    logger.info(
-        f"Called hello on {app_spec.contract.name} ({app_client.app_id}) "
-        f"with name={name}, received: {response.return_value}"
-    )
+    # name = "world"
+    # response = app_client.hello(name=name)
+    # logger.info(
+    #     f"Called hello on {app_spec.contract.name} ({app_client.app_id}) "
+    #     f"with name={name}, received: {response.return_value}"
+    # )
