@@ -61,24 +61,24 @@ const AddCalls = ({ openModal, setModalState }: AddCallsInterface) => {
       return;
     });
 
-    const response = await appClient
-      .lockToken({
-        addr: activeAddress as string,
-        lockAmount: contractInputA,
-        lockDuration: contractInputB,
-        payment: { 
-          amount: contractInputA,
-          assetIndex: 0,
-          
-         },
-      })
-      .catch((e: Error) => {
-        enqueueSnackbar(`Error calling the contract: ${e.message}`, { variant: "error" });
-        setLoading(false);
-        return;
-      });
+    // const response = await appClient
+    //   .lockToken({
+    //     addr: activeAddress as string,
+    //     lockAmount: contractInputA,
+    //     lockDuration: contractInputB,
+    //     payment: {
+    //       amount: contractInputA,
+    //       assetIndex: 0,
 
-    enqueueSnackbar(`Response from the contract: ${response?.return}`, { variant: "success" });
+    //      },
+    //   })
+    //   .catch((e: Error) => {
+    //     enqueueSnackbar(`Error calling the contract: ${e.message}`, { variant: "error" });
+    //     setLoading(false);
+    //     return;
+    //   });
+
+    // enqueueSnackbar(`Response from the contract: ${response?.return}`, { variant: "success" });
     setLoading(false);
   };
 
