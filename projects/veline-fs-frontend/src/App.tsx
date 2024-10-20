@@ -1,3 +1,4 @@
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { DeflyWalletConnect } from "@blockshake/defly-connect";
 import { DaffiWalletConnect } from "@daffiwallet/connect";
 import { PeraWalletConnect } from "@perawallet/connect";
@@ -7,6 +8,9 @@ import { SnackbarProvider } from "notistack";
 import Home from "./Home";
 import { getAlgodConfigFromViteEnvironment, getKmdConfigFromViteEnvironment } from "./utils/network/getAlgoClientConfigs";
 import "./index.css";
+import Campaign from "./Campaign";
+import Scholarship from "./Scholarship";
+import { Navbar } from "./components/NavBar";
 
 let providersArray: ProvidersArray;
 if (import.meta.env.VITE_ALGOD_NETWORK === "") {
@@ -51,7 +55,15 @@ export default function App() {
   return (
     <SnackbarProvider maxSnack={3}>
       <WalletProvider value={walletProviders}>
-        <Home />
+        <Router>
+          <Navbar></Navbar>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/campaign" element={<Campaign />} />
+            <Route path="/scholarship" element={<Scholarship></Scholarship>} />
+            {/* Add more routes as needed */}
+          </Routes>
+        </Router>
       </WalletProvider>
     </SnackbarProvider>
   );
