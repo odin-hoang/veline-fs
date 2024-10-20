@@ -35,7 +35,7 @@ const Home: React.FC<HomeProps> = () => {
   };
 
   return (
-    <div className="relative min-h-screen bg-teal-400">
+    <div className="relative min-h-screen">
       <div className=" text-center rounded-lg p-6 max-w-md mx-auto">
         <div className="max-w-md">
           <h1 className="text-4xl">

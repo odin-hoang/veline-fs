@@ -1,37 +1,54 @@
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Provider, useWallet } from "@txnlab/use-wallet";
 import Account from "./Account";
+import { ellipseAddress } from "@/utils/ellipseAddress";
 
-interface ConnectWalletInterface {
-  openModal: boolean;
-  closeModal: () => void;
-}
-
-const ConnectWallet = ({ openModal, closeModal }: ConnectWalletInterface) => {
+export function ConnectButton() {
   const { providers, activeAddress } = useWallet();
-
   const isKmd = (provider: Provider) => provider.metadata.name.toLowerCase() === "kmd";
   return (
-    <dialog
-      id="connect_wallet_modal"
-      className={`modal ${openModal ? "modal-open" : ""}`}
-      style={{ display: openModal ? "block" : "none" }}
-    >
-      <form method="dialog" className="modal-box">
-        <h3 className="font-bold text-2xl">Select wallet provider</h3>
-
-        <div className="grid m-2 pt-5">
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="outline">
+          {activeAddress ? (
+            <span className="flex items-center gap-2">
+              <img
+                alt={`wallet_icon_${providers?.find((p) => p.isActive)?.metadata.id}`}
+                src={providers?.find((p) => p.isActive)?.metadata.icon}
+                className="rounded-md w-6 h-6"
+              />
+              {ellipseAddress(activeAddress)}
+            </span>
+          ) : (
+            "Connect wallet"
+          )}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          {activeAddress && <span></span>}
+          {!activeAddress && (
+            <span>
+              {" "}
+              <DialogTitle>Select your wallet</DialogTitle>
+              <DialogDescription>Connect your wallet to start interacting with the application.</DialogDescription>
+            </span>
+          )}
+        </DialogHeader>
+        <div className="flex items-center gap-2 justify-between">
           {activeAddress && (
             <>
               <Account />
-              <div className="divider" />
             </>
           )}
 
           {!activeAddress &&
             providers?.map((provider) => (
-              <button
+              <Button
+                variant={"veline"}
+                className="h-12"
                 data-test-id={`${provider.metadata.id}-connect`}
-                className="btn border-teal-800 border-1  m-2"
                 key={`provider-${provider.metadata.id}`}
                 onClick={() => {
                   return provider.connect();
@@ -41,26 +58,17 @@ const ConnectWallet = ({ openModal, closeModal }: ConnectWalletInterface) => {
                   <img
                     alt={`wallet_icon_${provider.metadata.id}`}
                     src={provider.metadata.icon}
-                    style={{ objectFit: "contain", width: "30px", height: "auto" }}
+                    style={{ objectFit: "contain", width: "30px", height: "30px" }}
+                    className="rounded-md"
                   />
                 )}
                 <span>{isKmd(provider) ? "LocalNet Wallet" : provider.metadata.name}</span>
-              </button>
+              </Button>
             ))}
         </div>
-
-        <div className="modal-action grid">
-          <button
-            data-test-id="close-wallet-modal"
-            className="btn"
-            onClick={() => {
-              closeModal();
-            }}
-          >
-            Close
-          </button>
+        <DialogFooter>
           {activeAddress && (
-            <button
+            <Button
               className="btn btn-warning"
               data-test-id="logout"
               onClick={() => {
@@ -79,11 +87,10 @@ const ConnectWallet = ({ openModal, closeModal }: ConnectWalletInterface) => {
               }}
             >
               Logout
-            </button>
+            </Button>
           )}
-        </div>
-      </form>
-    </dialog>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
-};
-export default ConnectWallet;
+}

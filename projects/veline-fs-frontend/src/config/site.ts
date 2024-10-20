@@ -5,22 +5,22 @@ export const siteConfig = {
   description: "Make beautiful websites regardless of your design experience.",
   navItems: [
     {
-      label: "Staking",
-      href: "/staking",
+      label: "Campaign",
+      href: "/campaign",
     },
     {
-      label: "Voting",
-      href: "/voting",
+      label: "Scholarship",
+      href: "/scholarship",
     },
   ],
   navMenuItems: [
     {
-      label: "Staking",
-      href: "/staking",
+      label: "Campaign",
+      href: "/campaign",
     },
     {
-      label: "Voting",
-      href: "/voting",
+      label: "Scholarship",
+      href: "/scholarship",
     },
   ],
   links: {

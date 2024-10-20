@@ -18,13 +18,14 @@ import clsx from "clsx";
 import { siteConfig } from "@/config/site";
 import { TwitterIcon, GithubIcon, DiscordIcon, HeartFilledIcon, SearchIcon, Logo } from "@/components/icons";
 import React from "react";
+import { ConnectButton } from "./ConnectButton";
 export const Navbar = () => {
   const pathname = window.location.pathname;
   return (
     <NextUINavbar
       maxWidth="xl"
       position="sticky"
-      className="bg-teal-500/80"
+      className="bg-purple-600/80"
       classNames={{
         item: [
           "flex",
@@ -88,7 +89,7 @@ export const Navbar = () => {
           >
             Sponsor
           </Button> */}
-          {/* <ConnectButton></ConnectButton> */}
+          <ConnectButton></ConnectButton>
         </NavbarItem>
       </NavbarContent>
 
