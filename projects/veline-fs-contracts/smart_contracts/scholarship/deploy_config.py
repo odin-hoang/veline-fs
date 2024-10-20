@@ -14,11 +14,11 @@ def deploy(
     app_spec: algokit_utils.ApplicationSpecification,
     deployer: algokit_utils.Account,
 ) -> None:
-    from smart_contracts.artifacts.lock_contract.voting_escrow_client import (
-        VotingEscrowClient,
+    from smart_contracts.artifacts.scholarship.certificate_client import (
+        CertificateClient,
     )
 
-    app_client = VotingEscrowClient(
+    app_client = CertificateClient(
         algod_client,
         creator=deployer,
         indexer_client=indexer_client,
@@ -33,3 +33,4 @@ def deploy(
     #     f"Called hello on {app_spec.contract.name} ({app_client.app_id}) "
     #     f"with name={name}, received: {response.return_value}"
     # )
+    pass
