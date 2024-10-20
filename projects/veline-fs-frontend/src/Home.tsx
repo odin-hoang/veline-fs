@@ -5,6 +5,7 @@ import ConnectWallet from "./components/ConnectWallet";
 import Transact from "./components/Transact";
 import AppCalls from "./components/AppCalls";
 import AddCalls from "./components/AddCalls";
+import { ellipseAddress } from "./utils/ellipseAddress";
 
 interface HomeProps {}
 
@@ -54,7 +55,7 @@ const Home: React.FC<HomeProps> = () => {
 
             <div className="divider" />
             <button data-test-id="connect-wallet" className="btn m-2" onClick={toggleWalletModal}>
-              Wallet Connection
+              {activeAddress ? ellipseAddress(activeAddress) : "Connect Wallet"}
             </button>
 
             {activeAddress && (
