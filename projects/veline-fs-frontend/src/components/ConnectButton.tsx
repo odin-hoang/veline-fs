@@ -42,7 +42,7 @@ export function ConnectButton() {
             </span>
           )}
         </DialogHeader>
-        <div className="flex items-center gap-2 justify-between">
+        <div className="grid gap-4">
           {activeAddress && (
             <>
               <Account />
@@ -53,7 +53,7 @@ export function ConnectButton() {
             providers?.map((provider) => (
               <Button
                 variant={"veline"}
-                className="h-12"
+                className="h-12 hover:scale-105 transition-all"
                 data-test-id={`${provider.metadata.id}-connect`}
                 key={`provider-${provider.metadata.id}`}
                 onClick={() => {
