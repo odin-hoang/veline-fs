@@ -27,7 +27,13 @@ export function ConnectButton() {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          {activeAddress && <span></span>}
+          {activeAddress && (
+            <span>
+              <div className="flex justify-between items-center p-6 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-sm opacity-80 mt-4">
+                <h2 className="text-2xl font-bold text-white">Account Details</h2>
+              </div>
+            </span>
+          )}
           {!activeAddress && (
             <span>
               {" "}
@@ -69,7 +75,7 @@ export function ConnectButton() {
         <DialogFooter>
           {activeAddress && (
             <Button
-              className="btn btn-warning"
+              className="w-full btn-warning"
               data-test-id="logout"
               onClick={() => {
                 if (providers) {

@@ -28,25 +28,27 @@ const Account = () => {
   }, [algoConfig.network]);
 
   return (
-    <div className="p-4 rounded-lg">
-      <a
-        className="text-blue-500 hover:underline"
-        target="_blank"
-        rel="noopener noreferrer"
-        href={`https://app.dappflow.org/setnetwork?name=${dappFlowNetworkName}&redirect=explorer/account/${activeAddress}/`}
-      >
-        <div className="text-lg font-semibold">Address: {ellipseAddress(activeAddress)}</div>
-      </a>
-      <div className="mt-2 text-gray-600 grid">
-        <span className="font-medium">Network: {algoConfig.network === "" ? "localnet" : algoConfig.network}</span>
-        <span className="font-medium">Balance: {accountInfo / 1000000}</span>
-
-        <span className="font-medium">
-          Assets:{" "}
-          <div className="text-purple-600">
-            {assets.map((asset) => `${asset.amount / 100000000} ${asset["unit-name"] || "VeLine"}`).join(", ")}
-          </div>
-        </span>
+    <div className="p-6 space-y-4">
+      <div>
+        <label className="text-sm font-medium text-gray-500">Address</label>
+        <p className="text-lg font-mono text-gray-900">{ellipseAddress(activeAddress)}</p>
+      </div>
+      <div className="flex justify-between">
+        <div>
+          <label className="text-sm font-medium text-gray-500">Network</label>
+          <p className="text-lg text-gray-900">{algoConfig.network === "" ? "localnet" : algoConfig.network}</p>
+        </div>
+        <div>
+          <label className="text-sm font-medium text-gray-500">Balance</label>
+          <p className="text-lg text-gray-900">{accountInfo / 1000000}</p>
+        </div>
+      </div>
+      <div>
+        <label className="text-sm font-medium text-gray-500">Assets</label>
+        <p className="text-lg text-gray-900">
+          {" "}
+          {assets.map((asset) => `${asset.amount / 100000000} ${asset["unit-name"] || "VeLine"}`).join(", ")}
+        </p>
       </div>
     </div>
   );
