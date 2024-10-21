@@ -16,7 +16,7 @@ from algopy import (
     op,
     subroutine,
 )
-from algopy.arc4 import Address, DynamicArray, Struct, abimethod, emit
+from algopy.arc4 import Address, Struct, abimethod, emit
 
 
 class VotingEscrowUser(Struct):
@@ -77,17 +77,14 @@ class PayScholarship(Struct):
     scholarship_id: arc4.UInt64
     user: Address
 
-
 class Certificate(ARC4Contract):
     """Certificate Contract"""
-
+    
     def __init__(self) -> None:
         # GLOBAL STATE
-        self.total_locked = UInt64(0)
-        self.total_vetoken = UInt64(0)
         self.voting_escrow_user = BoxMap(Address, VotingEscrowUser)
         self.total_user = UInt64(0)
-        self.user_locked: DynamicArray[Address] = DynamicArray[Address]()
+        # self.user_locked: DynamicArray[Address] = DynamicArray[Address]()
         self.locked_user = BoxMap(Address, bool)
         self.asa = Asset()  # Tokens
         self.SECONDS_PER_YEAR = UInt64(365 * 24 * 60 * 60)
@@ -95,7 +92,6 @@ class Certificate(ARC4Contract):
         self.MIN_LOCK_TIME_SECONDS = UInt64(60 * 60 * 24 * 7)
         self.MAX_LOCK_TIME_SECONDS = UInt64(60 * 60 * 24 * 365 * 4)
         # Scholarship
-        self.leader_scholarship = BoxMap(Address, bool)
         self.scholarship = BoxMap(UInt64, Scholarship)
         self.total_scholarship = UInt64(0)
         self.paid_scholarship = BoxMap(Bytes, bool)
@@ -106,13 +102,6 @@ class Certificate(ARC4Contract):
     ) -> UInt64:
         """Get the time at which the lock expires"""
         return lock_start_time + lock_duration
-
-    @subroutine
-    def only_leader_scholarship(self, sender_address: Address) -> None:
-        assert (
-            self.leader_scholarship[sender_address]
-            or sender_address == Global.creator_address
-        )
 
     @subroutine
     def _calculate_vetoken_amount(
@@ -137,7 +126,6 @@ class Certificate(ARC4Contract):
         lock_time_remaining = lock_end_time - current_time
 
         if time_delta > 0:
-            self.total_vetoken -= op.btoi(user.amount_vetoken.bytes)
             if current_time > lock_end_time:
                 user.amount_vetoken = arc4.UInt64(0)
             else:
@@ -145,9 +133,6 @@ class Certificate(ARC4Contract):
                     self._calculate_vetoken_amount(
                         op.btoi(user.amount_locked.bytes), lock_time_remaining
                     )
-                )
-                self.total_vetoken = self.total_vetoken + op.btoi(
-                    user.amount_vetoken.bytes
                 )
             user.update_time = arc4.UInt64(current_time)
         emit(UpdateDataEvent(addr=user.user_address, user=user))
@@ -162,6 +147,9 @@ class Certificate(ARC4Contract):
         assert Txn.sender == Global.creator_address
         assert self.asa.id == 0
         self.asa = asset
+        itxn.AssetTransfer(
+            xfer_asset=asset, asset_receiver=Global.current_application_address
+        ).submit()
 
     @abimethod
     def lock_token(
@@ -218,11 +206,9 @@ class Certificate(ARC4Contract):
         self.voting_escrow_user[sender_address].update_time = arc4.UInt64(
             current_timestamp
         )
-        self.total_locked += lock_amount
-        self.total_vetoken += op.btoi(vetoken_amount.bytes)
 
         if sender_address not in self.locked_user:
-            self.user_locked.append(sender_address)
+            # self.user_locked.append(sender_address)
             self.total_user += 1
             self.locked_user[sender_address] = True
 
@@ -255,8 +241,6 @@ class Certificate(ARC4Contract):
         ), "Not found any locked"
         assert current_time > lock_end_time, "Not expired"
         assert locked_amount > 0
-        assert self.total_locked >= op.btoi(locked_amount.bytes)
-        self.total_locked -= op.btoi(locked_amount.bytes)
         self.voting_escrow_user[sender_address].amount_locked = arc4.UInt64(0)
         self.voting_escrow_user[sender_address].lock_start_time = arc4.UInt64(0)
         self.voting_escrow_user[sender_address].lock_duration = arc4.UInt64(0)
@@ -340,21 +324,7 @@ class Certificate(ARC4Contract):
         self._update_vetoken_data(self.voting_escrow_user[sender_address].copy())
 
     @abimethod
-    def add_leader_scholarship(self) -> None:
-        sender = Txn.sender
-        sender_address = Address(sender)
-
-        assert (
-            sender_address not in self.leader_scholarship
-            or not self.leader_scholarship[sender_address]
-        )
-        self.leader_scholarship[sender_address] = True
-
-    @abimethod
     def opt_into_asset(self, asset: Asset) -> None:
-        sender = Txn.sender
-        sender_address = Address(sender)
-        self.only_leader_scholarship(sender_address)
         itxn.AssetTransfer(
             asset_receiver=Global.current_application_address, xfer_asset=asset
         ).submit()
@@ -371,7 +341,6 @@ class Certificate(ARC4Contract):
         sender_address = Address(sender)
         scholarship_id = self.total_scholarship
         # Assertion
-        self.only_leader_scholarship(sender_address=sender_address)
         assert amount > 0
         assert value > 0
         assert scholarship_id not in self.scholarship
@@ -438,11 +407,11 @@ class Certificate(ARC4Contract):
             )
         )
 
-    @abimethod
-    def users_locked(self) -> DynamicArray[Address]:
-        if self.user_locked.length == 0:
-            return DynamicArray[Address]()
-        return self.user_locked.copy()
+    # @abimethod
+    # def users_locked(self) -> DynamicArray[Address]:
+    #     if self.user_locked.length == 0:
+    #         return DynamicArray[Address]()
+    #     return self.user_locked.copy()
 
     @abimethod
     def is_locked_ever(self, addr: Address) -> bool:

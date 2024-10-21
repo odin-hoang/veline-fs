@@ -165,8 +165,6 @@ opt_into_asset:
     assert // check self.asa exists
     !
     assert
-    frame_dig -1
-    assert
     txn Sender
     global CreatorAddress
     ==

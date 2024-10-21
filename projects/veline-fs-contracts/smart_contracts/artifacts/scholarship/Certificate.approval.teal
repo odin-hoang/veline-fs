@@ -14,23 +14,21 @@ main_entrypoint@2:
 __puya_arc4_router__:
     proto 0 1
     txn NumAppArgs
-    bz __puya_arc4_router___bare_routing@18
+    bz __puya_arc4_router___bare_routing@16
     method "initialize(asset)void"
     method "lock_token(address,uint64,uint64,axfer)void"
     method "claim_token()void"
     method "extend_lock(uint64)void"
     method "extend_amount(uint64)void"
     method "update_vetoken_data()void"
-    method "add_leader_scholarship()void"
     method "opt_into_asset(asset)void"
     method "add_scholarship(asset,uint64,uint64,axfer)uint64"
     method "pay_scholarship(uint64)void"
-    method "users_locked()address[]"
     method "is_locked_ever(address)bool"
     method "profile_lock_user(address)(address,uint64,uint64,uint64,uint64,uint64,uint64)"
     method "balance_of(address)uint64"
     txna ApplicationArgs 0
-    match __puya_arc4_router___initialize_route@2 __puya_arc4_router___lock_token_route@3 __puya_arc4_router___claim_token_route@4 __puya_arc4_router___extend_lock_route@5 __puya_arc4_router___extend_amount_route@6 __puya_arc4_router___update_vetoken_data_route@7 __puya_arc4_router___add_leader_scholarship_route@8 __puya_arc4_router___opt_into_asset_route@9 __puya_arc4_router___add_scholarship_route@10 __puya_arc4_router___pay_scholarship_route@11 __puya_arc4_router___users_locked_route@12 __puya_arc4_router___is_locked_ever_route@13 __puya_arc4_router___profile_lock_user_route@14 __puya_arc4_router___balance_of_route@15
+    match __puya_arc4_router___initialize_route@2 __puya_arc4_router___lock_token_route@3 __puya_arc4_router___claim_token_route@4 __puya_arc4_router___extend_lock_route@5 __puya_arc4_router___extend_amount_route@6 __puya_arc4_router___update_vetoken_data_route@7 __puya_arc4_router___opt_into_asset_route@8 __puya_arc4_router___add_scholarship_route@9 __puya_arc4_router___pay_scholarship_route@10 __puya_arc4_router___is_locked_ever_route@11 __puya_arc4_router___profile_lock_user_route@12 __puya_arc4_router___balance_of_route@13
     int 0
     retsub
 
@@ -114,17 +112,7 @@ __puya_arc4_router___update_vetoken_data_route@7:
     int 1
     retsub
 
-__puya_arc4_router___add_leader_scholarship_route@8:
-    txn OnCompletion
-    !
-    assert // OnCompletion is NoOp
-    txn ApplicationID
-    assert // is not creating
-    callsub add_leader_scholarship
-    int 1
-    retsub
-
-__puya_arc4_router___opt_into_asset_route@9:
+__puya_arc4_router___opt_into_asset_route@8:
     txn OnCompletion
     !
     assert // OnCompletion is NoOp
@@ -137,7 +125,7 @@ __puya_arc4_router___opt_into_asset_route@9:
     int 1
     retsub
 
-__puya_arc4_router___add_scholarship_route@10:
+__puya_arc4_router___add_scholarship_route@9:
     txn OnCompletion
     !
     assert // OnCompletion is NoOp
@@ -167,7 +155,7 @@ __puya_arc4_router___add_scholarship_route@10:
     int 1
     retsub
 
-__puya_arc4_router___pay_scholarship_route@11:
+__puya_arc4_router___pay_scholarship_route@10:
     txn OnCompletion
     !
     assert // OnCompletion is NoOp
@@ -179,21 +167,7 @@ __puya_arc4_router___pay_scholarship_route@11:
     int 1
     retsub
 
-__puya_arc4_router___users_locked_route@12:
-    txn OnCompletion
-    !
-    assert // OnCompletion is NoOp
-    txn ApplicationID
-    assert // is not creating
-    callsub users_locked
-    byte 0x151f7c75
-    swap
-    concat
-    log
-    int 1
-    retsub
-
-__puya_arc4_router___is_locked_ever_route@13:
+__puya_arc4_router___is_locked_ever_route@11:
     txn OnCompletion
     !
     assert // OnCompletion is NoOp
@@ -212,7 +186,7 @@ __puya_arc4_router___is_locked_ever_route@13:
     int 1
     retsub
 
-__puya_arc4_router___profile_lock_user_route@14:
+__puya_arc4_router___profile_lock_user_route@12:
     txn OnCompletion
     !
     assert // OnCompletion is NoOp
@@ -227,7 +201,7 @@ __puya_arc4_router___profile_lock_user_route@14:
     int 1
     retsub
 
-__puya_arc4_router___balance_of_route@15:
+__puya_arc4_router___balance_of_route@13:
     txn OnCompletion
     !
     assert // OnCompletion is NoOp
@@ -243,16 +217,16 @@ __puya_arc4_router___balance_of_route@15:
     int 1
     retsub
 
-__puya_arc4_router___bare_routing@18:
+__puya_arc4_router___bare_routing@16:
     txn OnCompletion
-    bnz __puya_arc4_router___after_if_else@22
+    bnz __puya_arc4_router___after_if_else@20
     txn ApplicationID
     !
     assert // is creating
     int 1
     retsub
 
-__puya_arc4_router___after_if_else@22:
+__puya_arc4_router___after_if_else@20:
     int 0
     retsub
 
@@ -273,6 +247,16 @@ initialize:
     byte "asa"
     frame_dig -1
     app_global_put
+    itxn_begin
+    global CurrentApplicationAddress
+    itxn_field AssetReceiver
+    frame_dig -1
+    itxn_field XferAsset
+    int axfer
+    itxn_field TypeEnum
+    int 0
+    itxn_field Fee
+    itxn_submit
     retsub
 
 
@@ -436,7 +420,7 @@ lock_token_bool_merge@4:
     dig 1
     box_get
     assert // check self.voting_escrow_user entry exists
-    dig 5
+    uncover 5
     uncover 2
     b|
     replace2 56
@@ -449,25 +433,6 @@ lock_token_bool_merge@4:
     uncover 2
     replace2 64
     box_put
-    int 0
-    byte "total_locked"
-    app_global_get_ex
-    assert // check self.total_locked exists
-    frame_dig -3
-    +
-    byte "total_locked"
-    swap
-    app_global_put
-    int 0
-    byte "total_vetoken"
-    app_global_get_ex
-    assert // check self.total_vetoken exists
-    uncover 2
-    btoi
-    +
-    byte "total_vetoken"
-    swap
-    app_global_put
     byte "locked_user"
     swap
     concat
@@ -476,24 +441,6 @@ lock_token_bool_merge@4:
     box_len
     bury 1
     bnz lock_token_after_if_else@6
-    int 0
-    byte "user_locked"
-    app_global_get_ex
-    assert // check self.user_locked exists
-    extract 2 0
-    frame_dig 3
-    concat
-    dup
-    len
-    int 32
-    /
-    itob
-    extract 6 2
-    swap
-    concat
-    byte "user_locked"
-    swap
-    app_global_put
     int 0
     byte "total_user"
     app_global_get_ex
@@ -599,67 +546,46 @@ claim_token:
     byte 0x0000000000000000
     b>
     assert
-    int 0
-    byte "total_locked"
-    app_global_get_ex
-    assert // check self.total_locked exists
-    dig 2
-    btoi
     dup
-    cover 2
-    >=
-    assert
-    int 0
-    byte "total_locked"
-    app_global_get_ex
-    assert // check self.total_locked exists
-    dig 1
-    -
-    byte "total_locked"
-    swap
-    app_global_put
-    dig 1
     box_get
     assert // check self.voting_escrow_user entry exists
     byte 0x0000000000000000
     replace2 32
-    dig 2
+    dig 1
     swap
     box_put
-    dig 1
+    dup
     box_get
     assert // check self.voting_escrow_user entry exists
     byte 0x0000000000000000
     replace2 40
-    dig 2
+    dig 1
     swap
     box_put
-    dig 1
+    dup
     box_get
     assert // check self.voting_escrow_user entry exists
     byte 0x0000000000000000
     replace2 48
-    dig 2
+    dig 1
     swap
     box_put
-    dig 1
+    dup
     box_get
     assert // check self.voting_escrow_user entry exists
     byte 0x0000000000000000
     replace2 64
-    dig 2
+    dig 1
     swap
     box_put
-    dig 1
+    dup
     box_get
     assert // check self.voting_escrow_user entry exists
     byte 0x0000000000000000
     replace2 56
-    uncover 2
-    swap
     box_put
     byte "locked_user"
-    dig 3
+    dig 2
     concat
     int 0
     itob
@@ -669,10 +595,12 @@ claim_token:
     byte "asa"
     app_global_get_ex
     assert // check self.asa exists
+    dig 1
+    btoi
     dig 3
     itxn_field AssetReceiver
-    itxn_field XferAsset
     itxn_field AssetAmount
+    itxn_field XferAsset
     int axfer
     itxn_field TypeEnum
     int 0
@@ -790,17 +718,6 @@ _update_vetoken_data:
     frame_dig -1
     swap
     bz _update_vetoken_data_after_if_else@5
-    int 0
-    byte "total_vetoken"
-    app_global_get_ex
-    assert // check self.total_vetoken exists
-    frame_dig -1
-    extract 56 8 // on error: Index access is out of bounds
-    btoi
-    -
-    byte "total_vetoken"
-    swap
-    app_global_put
     frame_dig 0
     frame_dig 1
     >
@@ -829,17 +746,6 @@ _update_vetoken_data_else_body@3:
     swap
     replace2 56
     frame_bury -1
-    int 0
-    byte "total_vetoken"
-    app_global_get_ex
-    assert // check self.total_vetoken exists
-    frame_dig -1
-    extract 56 8 // on error: Index access is out of bounds
-    btoi
-    +
-    byte "total_vetoken"
-    swap
-    app_global_put
 
 _update_vetoken_data_after_if_else@4:
     frame_dig 0
@@ -953,46 +859,9 @@ update_vetoken_data:
     retsub
 
 
-// smart_contracts.scholarship.contract.Certificate.add_leader_scholarship() -> void:
-add_leader_scholarship:
-    proto 0 0
-    byte "leader_scholarship"
-    txn Sender
-    concat
-    dup
-    box_len
-    bury 1
-    bz add_leader_scholarship_bool_true@2
-    frame_dig 0
-    box_get
-    swap
-    btoi
-    swap
-    assert // check self.leader_scholarship entry exists
-    bnz add_leader_scholarship_bool_false@3
-
-add_leader_scholarship_bool_true@2:
-    int 1
-    b add_leader_scholarship_bool_merge@4
-
-add_leader_scholarship_bool_false@3:
-    int 0
-
-add_leader_scholarship_bool_merge@4:
-    assert
-    int 1
-    itob
-    frame_dig 0
-    swap
-    box_put
-    retsub
-
-
 // smart_contracts.scholarship.contract.Certificate.opt_into_asset(asset: uint64) -> void:
 opt_into_asset:
     proto 1 0
-    txn Sender
-    callsub only_leader_scholarship
     itxn_begin
     global CurrentApplicationAddress
     frame_dig -1
@@ -1006,35 +875,6 @@ opt_into_asset:
     retsub
 
 
-// smart_contracts.scholarship.contract.Certificate.only_leader_scholarship(sender_address: bytes) -> void:
-only_leader_scholarship:
-    proto 1 0
-    byte "leader_scholarship"
-    frame_dig -1
-    concat
-    box_get
-    swap
-    btoi
-    swap
-    assert // check self.leader_scholarship entry exists
-    bnz only_leader_scholarship_bool_true@2
-    frame_dig -1
-    global CreatorAddress
-    ==
-    bz only_leader_scholarship_bool_false@3
-
-only_leader_scholarship_bool_true@2:
-    int 1
-    b only_leader_scholarship_bool_merge@4
-
-only_leader_scholarship_bool_false@3:
-    int 0
-
-only_leader_scholarship_bool_merge@4:
-    assert
-    retsub
-
-
 // smart_contracts.scholarship.contract.Certificate.add_scholarship(asset: uint64, amount: uint64, value: uint64, axfer: uint64) -> uint64:
 add_scholarship:
     proto 4 1
@@ -1042,16 +882,12 @@ add_scholarship:
     int 0
     byte "total_scholarship"
     app_global_get_ex
-    swap
-    cover 2
     assert // check self.total_scholarship exists
-    dup
-    callsub only_leader_scholarship
     frame_dig -3
     assert
     frame_dig -2
     assert
-    dig 1
+    dup
     itob
     byte "scholarship"
     dig 1
@@ -1073,7 +909,7 @@ add_scholarship:
     assert
     frame_dig -1
     gtxns AssetSender
-    dig 3
+    dig 4
     ==
     assert
     global CreatorAddress
@@ -1105,7 +941,7 @@ add_scholarship:
     concat
     swap
     concat
-    uncover 2
+    uncover 3
     concat
     box_put
     retsub
@@ -1391,27 +1227,6 @@ balance_of_after_if_else@4:
     retsub
 
 
-// smart_contracts.scholarship.contract.Certificate.users_locked() -> bytes:
-users_locked:
-    proto 0 1
-    int 0
-    byte "user_locked"
-    app_global_get_ex
-    assert // check self.user_locked exists
-    int 0
-    extract_uint16
-    bnz users_locked_after_if_else@2
-    byte 0x0000
-    retsub
-
-users_locked_after_if_else@2:
-    int 0
-    byte "user_locked"
-    app_global_get_ex
-    assert // check self.user_locked exists
-    retsub
-
-
 // smart_contracts.scholarship.contract.Certificate.is_locked_ever(addr: bytes) -> uint64:
 is_locked_ever:
     proto 1 1
@@ -1455,17 +1270,8 @@ profile_lock_user:
 // smart_contracts.scholarship.contract.Certificate.__init__() -> void:
 __init__:
     proto 0 0
-    byte "total_locked"
-    int 0
-    app_global_put
-    byte "total_vetoken"
-    int 0
-    app_global_put
     byte "total_user"
     int 0
-    app_global_put
-    byte "user_locked"
-    byte 0x0000
     app_global_put
     byte "asa"
     int 0

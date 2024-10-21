@@ -129,7 +129,6 @@ class Campaign(ARC4Contract):
     @abimethod
     def opt_into_asset(self, asset: Asset) -> None:
         assert self.asa.id == 0
-        assert asset.id != 0
         assert Txn.sender == Global.creator_address
         self.asa = asset
         itxn.AssetTransfer(
