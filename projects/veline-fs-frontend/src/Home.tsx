@@ -5,6 +5,9 @@ import ConnectWallet from "./components/ConnectWallet";
 import Transact from "./components/Transact";
 import AppCalls from "./components/AppCalls";
 import AddCalls from "./components/AddCalls";
+import { ellipseAddress } from "./utils/ellipseAddress";
+import { Button } from "./components/ui/button";
+import FlickeringGrid from "./components/ui/flickering-grid";
 
 interface HomeProps {}
 
@@ -32,30 +35,19 @@ const Home: React.FC<HomeProps> = () => {
   };
 
   return (
-    <div className="hero min-h-screen bg-teal-400">
-      <div className="hero-content text-center rounded-lg p-6 max-w-md bg-white mx-auto">
+    <div className="relative min-h-screen">
+      <div className=" text-center rounded-lg p-6 max-w-md mx-auto">
         <div className="max-w-md">
           <h1 className="text-4xl">
-            Welcome to <div className="font-bold">AlgoKit 🙂</div>
+            Welcome to <div className="font-bold">VeLine </div>
           </h1>
-          <p className="py-6">
-            This starter has been generated using official AlgoKit React template. Refer to the resource below for next steps.
-          </p>
+          <p className="py-6">VeLine is a decentralized application that allows users to interact with the Algorand blockchain.</p>
 
           <div className="grid">
-            <a
-              data-test-id="getting-started"
-              className="btn btn-primary m-2"
-              target="_blank"
-              href="https://github.com/algorandfoundation/algokit-cli"
-            >
-              Getting started
-            </a>
-
             <div className="divider" />
-            <button data-test-id="connect-wallet" className="btn m-2" onClick={toggleWalletModal}>
-              Wallet Connection
-            </button>
+            <Button data-test-id="connect-wallet" className="btn m-2" onClick={toggleWalletModal}>
+              {activeAddress ? ellipseAddress(activeAddress) : "Connect Wallet"}
+            </Button>
 
             {activeAddress && (
               <button data-test-id="transactions-demo" className="btn m-2" onClick={toggleDemoModal}>
