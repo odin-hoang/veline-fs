@@ -6,6 +6,7 @@ from algopy import (
     Asset,
     BigUInt,
     BoxMap,
+    Bytes,
     Global,
     Txn,
     UInt64,
@@ -97,7 +98,7 @@ class Certificate(ARC4Contract):
         self.leader_scholarship = BoxMap(Address, bool)
         self.scholarship = BoxMap(UInt64, Scholarship)
         self.total_scholarship = UInt64(0)
-        self.paid_scholarship = BoxMap(UInt64, BoxMap[Address, bool])
+        self.paid_scholarship = BoxMap(Bytes, bool)
 
     @subroutine
     def get_lock_end_time(
@@ -150,6 +151,10 @@ class Certificate(ARC4Contract):
                 )
             user.update_time = arc4.UInt64(current_time)
         emit(UpdateDataEvent(addr=user.user_address, user=user))
+
+    @subroutine
+    def get_paid_key(self, scholarship_id: UInt64, addr: Address) -> Bytes:
+        return op.sha256(op.itob(scholarship_id) + addr.bytes)  # Generate unique key
 
     # USER FUNCTIONS
     @abimethod
@@ -346,6 +351,15 @@ class Certificate(ARC4Contract):
         self.leader_scholarship[sender_address] = True
 
     @abimethod
+    def opt_into_asset(self, asset: Asset) -> None:
+        sender = Txn.sender
+        sender_address = Address(sender)
+        self.only_leader_scholarship(sender_address)
+        itxn.AssetTransfer(
+            asset_receiver=Global.current_application_address, xfer_asset=asset
+        ).submit()
+
+    @abimethod
     def add_scholarship(
         self,
         asset: Asset,
@@ -384,6 +398,10 @@ class Certificate(ARC4Contract):
         assert scholarship_id < self.total_scholarship
         assert scholarship_id in self.scholarship
         assert sender_address in self.voting_escrow_user
+        paid_key = self.get_paid_key(scholarship_id=scholarship_id, addr=sender_address)
+        assert (
+            paid_key not in self.paid_scholarship or not self.paid_scholarship[paid_key]
+        )
         scholarship = self.scholarship[scholarship_id].copy()
         self._update_vetoken_data(user=self.voting_escrow_user[sender_address].copy())
         voting_escrow_user = self.voting_escrow_user[sender_address].copy()
@@ -405,9 +423,10 @@ class Certificate(ARC4Contract):
             op.btoi(voting_escrow_user.used_amount.bytes)
             + op.btoi(scholarship.value.bytes)
         )
+        self.paid_scholarship[paid_key] = True
         # Transfer asset
         itxn.AssetTransfer(
-            xfer_asset=asset.id,
+            xfer_asset=asset,
             asset_receiver=sender,
             asset_close_to=sender,
             asset_amount=UInt64(1),

@@ -43,7 +43,7 @@ class Campaign(ARC4Contract):
         self.campaign = BoxMap(UInt64, EligibleData)
         self.valid_owner_campaign = BoxMap(Address, bool)
         self.campaign_id = BoxMap(Address, DynamicArray[arc4.UInt64])
-        self.claimed = BoxMap(UInt64, BoxMap[Address, bool])
+        self.claimed = BoxMap(Bytes, bool)
         self.HASH_LENGTH = UInt64(32)
         self.asa = Asset()
         self.total_campaign = UInt64(0)
@@ -90,18 +90,51 @@ class Campaign(ARC4Contract):
             bool: True if the proof is valid, else False.
         """
         computed_hash: Bytes = leaf
-        for i in urange(0, proof.length, self.HASH_LENGTH):
-            computed_hash = self.hash_pair(
-                computed_hash, op.extract(proof, i, self.HASH_LENGTH)
+        new_root = (
+            root
+            if proof.length % self.HASH_LENGTH == 0
+            else op.extract(
+                root,
+                root.length % self.HASH_LENGTH,
+                root.length - root.length % self.HASH_LENGTH,
             )
-        return computed_hash == root
+        )
+        new_proof = (
+            proof
+            if proof.length % self.HASH_LENGTH == 0
+            else op.extract(
+                proof,
+                proof.length % self.HASH_LENGTH,
+                proof.length - proof.length % self.HASH_LENGTH,
+            )
+        )
+        for i in urange(0, new_proof.length, self.HASH_LENGTH):
+            extract_proof = op.extract(new_proof, i, self.HASH_LENGTH)
+            new_extract_proof = (
+                extract_proof
+                if extract_proof.length % self.HASH_LENGTH == 0
+                else op.extract(
+                    extract_proof,
+                    extract_proof.length % self.HASH_LENGTH,
+                    extract_proof.length - extract_proof.length % self.HASH_LENGTH,
+                )
+            )
+            computed_hash = self.hash_pair(computed_hash, new_extract_proof)
+        return computed_hash == new_root
+
+    @subroutine
+    def get_claim_key(self, campaign_id: UInt64, addr: Address) -> Bytes:
+        return op.sha256(op.itob(campaign_id) + addr.bytes)  # Generate unique key
 
     @abimethod
-    def op_into_asset(self, asset: Asset) -> None:
+    def opt_into_asset(self, asset: Asset) -> None:
         assert self.asa.id == 0
         assert asset.id != 0
         assert Txn.sender == Global.creator_address
         self.asa = asset
+        itxn.AssetTransfer(
+            xfer_asset=asset, asset_receiver=Global.current_application_address
+        ).submit()
 
     @abimethod
     def allow_owner_campaign(self, owner_campaign: Address) -> None:
@@ -110,10 +143,11 @@ class Campaign(ARC4Contract):
         self.valid_owner_campaign[owner_campaign] = True
 
     @abimethod
-    def add_campaign(self, proof: Bytes, root: Bytes, expired_at: UInt64) -> None:
+    def add_campaign(self, proof: Bytes, root: Bytes, duration: UInt64) -> UInt64:
         self.only_valid_owner_campaign()
         sender = Txn.sender
         sender_address = Address(sender)
+        self.total_campaign += UInt64(1)
         campaign_id = self.total_campaign
         if sender_address not in self.campaign_id:
             self.campaign_id[sender_address] = DynamicArray[arc4.UInt64](
@@ -121,10 +155,10 @@ class Campaign(ARC4Contract):
             )
         else:
             self.campaign_id[sender_address].append(arc4.UInt64(campaign_id))
-        self.total_campaign += UInt64(1)
-        #!Remove to test
-        # current_time = Global.latest_timestamp
-        # assert expired_at > current_time
+        current_time = Global.latest_timestamp
+        expired_at = duration + current_time
+        assert expired_at > 0
+        assert campaign_id not in self.campaign
         eligible_data = EligibleData(
             proof=arc4.DynamicBytes(proof),
             root=arc4.DynamicBytes(root),
@@ -140,35 +174,45 @@ class Campaign(ARC4Contract):
                 owner=sender_address,
             )
         )
+        return campaign_id
 
     @abimethod
-    def mint_asset(
+    def mint_token(
         self,
+        leaf_data: Bytes,
         addr: Address,
         amount: UInt64,
         campaign_id: UInt64,
     ) -> None:
+        sender = Txn.sender
+        sender_address = Address(sender)
         eligible_data = self.campaign[campaign_id].copy()
         current_time = Global.latest_timestamp
-        assert eligible_data.expired_at < current_time, "Expired"
-        assert not self.claimed[campaign_id][addr], "User claimed"
+        claim_key = self.get_claim_key(campaign_id, addr)
+        assert campaign_id in self.campaign
+        assert claim_key not in self.claimed or not self.claimed[claim_key]
+        assert eligible_data.expired_at >= current_time, "Expired"
         assert eligible_data.proof and eligible_data.root, "Campaign is not found"
-        leaf = self.hash_pair(a=addr.bytes, b=op.itob(amount))
+
+        leaf = op.sha256(leaf_data)
         is_valid = self.verify_asset(
-            leaf=leaf, proof=eligible_data.proof.bytes, root=eligible_data.root.bytes
+            leaf=leaf,
+            proof=eligible_data.proof.bytes,
+            root=eligible_data.root.bytes,
         )
         assert is_valid, "Invalid data"
         # Mint token for eligible users
-        self.claimed[campaign_id][addr] = True
+        self.claimed[claim_key] = True
+
         itxn.AssetTransfer(
             xfer_asset=self.asa,
             asset_amount=amount,
-            asset_receiver=Txn.sender,
+            asset_receiver=sender,
             fee=0,
         ).submit()
         emit(
             MintEvent(
-                addr=addr,
+                addr=sender_address,
                 amount=arc4.UInt64(amount),
                 campaign_id=arc4.UInt64(campaign_id),
             )

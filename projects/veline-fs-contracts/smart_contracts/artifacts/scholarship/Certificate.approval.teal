@@ -14,7 +14,7 @@ main_entrypoint@2:
 __puya_arc4_router__:
     proto 0 1
     txn NumAppArgs
-    bz __puya_arc4_router___bare_routing@17
+    bz __puya_arc4_router___bare_routing@18
     method "initialize(asset)void"
     method "lock_token(address,uint64,uint64,axfer)void"
     method "claim_token()void"
@@ -22,6 +22,7 @@ __puya_arc4_router__:
     method "extend_amount(uint64)void"
     method "update_vetoken_data()void"
     method "add_leader_scholarship()void"
+    method "opt_into_asset(asset)void"
     method "add_scholarship(asset,uint64,uint64,axfer)uint64"
     method "pay_scholarship(uint64)void"
     method "users_locked()address[]"
@@ -29,7 +30,7 @@ __puya_arc4_router__:
     method "profile_lock_user(address)(address,uint64,uint64,uint64,uint64,uint64,uint64)"
     method "balance_of(address)uint64"
     txna ApplicationArgs 0
-    match __puya_arc4_router___initialize_route@2 __puya_arc4_router___lock_token_route@3 __puya_arc4_router___claim_token_route@4 __puya_arc4_router___extend_lock_route@5 __puya_arc4_router___extend_amount_route@6 __puya_arc4_router___update_vetoken_data_route@7 __puya_arc4_router___add_leader_scholarship_route@8 __puya_arc4_router___add_scholarship_route@9 __puya_arc4_router___pay_scholarship_route@10 __puya_arc4_router___users_locked_route@11 __puya_arc4_router___is_locked_ever_route@12 __puya_arc4_router___profile_lock_user_route@13 __puya_arc4_router___balance_of_route@14
+    match __puya_arc4_router___initialize_route@2 __puya_arc4_router___lock_token_route@3 __puya_arc4_router___claim_token_route@4 __puya_arc4_router___extend_lock_route@5 __puya_arc4_router___extend_amount_route@6 __puya_arc4_router___update_vetoken_data_route@7 __puya_arc4_router___add_leader_scholarship_route@8 __puya_arc4_router___opt_into_asset_route@9 __puya_arc4_router___add_scholarship_route@10 __puya_arc4_router___pay_scholarship_route@11 __puya_arc4_router___users_locked_route@12 __puya_arc4_router___is_locked_ever_route@13 __puya_arc4_router___profile_lock_user_route@14 __puya_arc4_router___balance_of_route@15
     int 0
     retsub
 
@@ -123,7 +124,20 @@ __puya_arc4_router___add_leader_scholarship_route@8:
     int 1
     retsub
 
-__puya_arc4_router___add_scholarship_route@9:
+__puya_arc4_router___opt_into_asset_route@9:
+    txn OnCompletion
+    !
+    assert // OnCompletion is NoOp
+    txn ApplicationID
+    assert // is not creating
+    txna ApplicationArgs 1
+    btoi
+    txnas Assets
+    callsub opt_into_asset
+    int 1
+    retsub
+
+__puya_arc4_router___add_scholarship_route@10:
     txn OnCompletion
     !
     assert // OnCompletion is NoOp
@@ -153,7 +167,7 @@ __puya_arc4_router___add_scholarship_route@9:
     int 1
     retsub
 
-__puya_arc4_router___pay_scholarship_route@10:
+__puya_arc4_router___pay_scholarship_route@11:
     txn OnCompletion
     !
     assert // OnCompletion is NoOp
@@ -165,7 +179,7 @@ __puya_arc4_router___pay_scholarship_route@10:
     int 1
     retsub
 
-__puya_arc4_router___users_locked_route@11:
+__puya_arc4_router___users_locked_route@12:
     txn OnCompletion
     !
     assert // OnCompletion is NoOp
@@ -179,7 +193,7 @@ __puya_arc4_router___users_locked_route@11:
     int 1
     retsub
 
-__puya_arc4_router___is_locked_ever_route@12:
+__puya_arc4_router___is_locked_ever_route@13:
     txn OnCompletion
     !
     assert // OnCompletion is NoOp
@@ -198,7 +212,7 @@ __puya_arc4_router___is_locked_ever_route@12:
     int 1
     retsub
 
-__puya_arc4_router___profile_lock_user_route@13:
+__puya_arc4_router___profile_lock_user_route@14:
     txn OnCompletion
     !
     assert // OnCompletion is NoOp
@@ -213,7 +227,7 @@ __puya_arc4_router___profile_lock_user_route@13:
     int 1
     retsub
 
-__puya_arc4_router___balance_of_route@14:
+__puya_arc4_router___balance_of_route@15:
     txn OnCompletion
     !
     assert // OnCompletion is NoOp
@@ -229,16 +243,16 @@ __puya_arc4_router___balance_of_route@14:
     int 1
     retsub
 
-__puya_arc4_router___bare_routing@17:
+__puya_arc4_router___bare_routing@18:
     txn OnCompletion
-    bnz __puya_arc4_router___after_if_else@21
+    bnz __puya_arc4_router___after_if_else@22
     txn ApplicationID
     !
     assert // is creating
     int 1
     retsub
 
-__puya_arc4_router___after_if_else@21:
+__puya_arc4_router___after_if_else@22:
     int 0
     retsub
 
@@ -974,6 +988,53 @@ add_leader_scholarship_bool_merge@4:
     retsub
 
 
+// smart_contracts.scholarship.contract.Certificate.opt_into_asset(asset: uint64) -> void:
+opt_into_asset:
+    proto 1 0
+    txn Sender
+    callsub only_leader_scholarship
+    itxn_begin
+    global CurrentApplicationAddress
+    frame_dig -1
+    itxn_field XferAsset
+    itxn_field AssetReceiver
+    int axfer
+    itxn_field TypeEnum
+    int 0
+    itxn_field Fee
+    itxn_submit
+    retsub
+
+
+// smart_contracts.scholarship.contract.Certificate.only_leader_scholarship(sender_address: bytes) -> void:
+only_leader_scholarship:
+    proto 1 0
+    byte "leader_scholarship"
+    frame_dig -1
+    concat
+    box_get
+    swap
+    btoi
+    swap
+    assert // check self.leader_scholarship entry exists
+    bnz only_leader_scholarship_bool_true@2
+    frame_dig -1
+    global CreatorAddress
+    ==
+    bz only_leader_scholarship_bool_false@3
+
+only_leader_scholarship_bool_true@2:
+    int 1
+    b only_leader_scholarship_bool_merge@4
+
+only_leader_scholarship_bool_false@3:
+    int 0
+
+only_leader_scholarship_bool_merge@4:
+    assert
+    retsub
+
+
 // smart_contracts.scholarship.contract.Certificate.add_scholarship(asset: uint64, amount: uint64, value: uint64, axfer: uint64) -> uint64:
 add_scholarship:
     proto 4 1
@@ -1050,38 +1111,11 @@ add_scholarship:
     retsub
 
 
-// smart_contracts.scholarship.contract.Certificate.only_leader_scholarship(sender_address: bytes) -> void:
-only_leader_scholarship:
-    proto 1 0
-    byte "leader_scholarship"
-    frame_dig -1
-    concat
-    box_get
-    swap
-    btoi
-    swap
-    assert // check self.leader_scholarship entry exists
-    bnz only_leader_scholarship_bool_true@2
-    frame_dig -1
-    global CreatorAddress
-    ==
-    bz only_leader_scholarship_bool_false@3
-
-only_leader_scholarship_bool_true@2:
-    int 1
-    b only_leader_scholarship_bool_merge@4
-
-only_leader_scholarship_bool_false@3:
-    int 0
-
-only_leader_scholarship_bool_merge@4:
-    assert
-    retsub
-
-
 // smart_contracts.scholarship.contract.Certificate.pay_scholarship(scholarship_id: uint64) -> void:
 pay_scholarship:
     proto 1 0
+    int 0
+    dupn 3
     byte ""
     dup
     txn Sender
@@ -1102,26 +1136,52 @@ pay_scholarship:
     concat
     dup
     cover 2
-    dup
     box_len
     bury 1
     assert
     byte "voting_escrow_user"
-    dig 2
+    dig 1
     concat
     dup
-    cover 3
-    dup
+    cover 2
     box_len
     bury 1
     assert
+    frame_dig -1
     swap
+    callsub get_paid_key
+    byte "paid_scholarship"
+    swap
+    concat
+    dup
+    box_len
+    bury 1
+    bz pay_scholarship_bool_true@2
+    frame_dig 10
+    box_get
+    swap
+    btoi
+    swap
+    assert // check self.paid_scholarship entry exists
+    bnz pay_scholarship_bool_false@3
+
+pay_scholarship_bool_true@2:
+    int 1
+    b pay_scholarship_bool_merge@4
+
+pay_scholarship_bool_false@3:
+    int 0
+
+pay_scholarship_bool_merge@4:
+    assert
+    frame_dig 8
     box_get
     swap
     dup
-    cover 3
-    cover 4
+    cover 2
+    frame_bury 2
     assert // check self.scholarship entry exists
+    frame_dig 9
     dup
     box_get
     assert // check self.voting_escrow_user entry exists
@@ -1131,61 +1191,32 @@ pay_scholarship:
     swap
     dup
     cover 3
-    cover 4
+    frame_bury 3
     assert // check self.voting_escrow_user entry exists
-    uncover 2
+    frame_dig 6
     callsub balance_of
     dig 1
     extract 16 8 // on error: Index access is out of bounds
     dup
     cover 2
-    cover 4
+    frame_bury 0
     itob
     b<=
     assert
     extract 8 8 // on error: Index access is out of bounds
     dup
-    cover 2
+    frame_bury 1
     byte 0x0000000000000001
     b>=
     assert
     extract 32 8 // on error: Index access is out of bounds
     byte 0x0000000000000000
     b>
-    bz pay_scholarship_bool_false@3
-    frame_dig 7
+    bz pay_scholarship_bool_false@7
+    frame_dig 3
     extract 56 8 // on error: Index access is out of bounds
     byte 0x0000000000000000
     b>
-    bz pay_scholarship_bool_false@3
-    int 1
-    b pay_scholarship_bool_merge@4
-
-pay_scholarship_bool_false@3:
-    int 0
-
-pay_scholarship_bool_merge@4:
-    assert
-    frame_dig 6
-    extract 24 8 // on error: Index access is out of bounds
-    btoi
-    dup
-    frame_bury 0
-    global CurrentApplicationAddress
-    swap
-    asset_holding_get AssetBalance
-    swap
-    dup
-    cover 2
-    frame_bury 1
-    assert // account opted into asset
-    int 1
-    >=
-    bz pay_scholarship_bool_false@7
-    frame_dig 1
-    itob
-    frame_dig 9
-    b==
     bz pay_scholarship_bool_false@7
     int 1
     b pay_scholarship_bool_merge@8
@@ -1195,12 +1226,41 @@ pay_scholarship_bool_false@7:
 
 pay_scholarship_bool_merge@8:
     assert
-    frame_dig 9
+    frame_dig 2
+    extract 24 8 // on error: Index access is out of bounds
+    btoi
+    dup
+    frame_bury 4
+    global CurrentApplicationAddress
+    swap
+    asset_holding_get AssetBalance
+    swap
+    dup
+    cover 2
+    frame_bury 5
+    assert // account opted into asset
+    int 1
+    >=
+    bz pay_scholarship_bool_false@11
+    frame_dig 5
+    itob
+    frame_dig 1
+    b==
+    bz pay_scholarship_bool_false@11
+    int 1
+    b pay_scholarship_bool_merge@12
+
+pay_scholarship_bool_false@11:
+    int 0
+
+pay_scholarship_bool_merge@12:
+    assert
+    frame_dig 1
     btoi
     int 1
     -
     itob
-    frame_dig 4
+    frame_dig 8
     dup
     cover 2
     box_get
@@ -1208,14 +1268,14 @@ pay_scholarship_bool_merge@8:
     swap
     replace2 8
     box_put
-    frame_dig 7
+    frame_dig 3
     extract 72 8 // on error: Index access is out of bounds
     btoi
-    frame_dig 8
+    frame_dig 0
     btoi
     +
     itob
-    frame_dig 5
+    frame_dig 9
     dup
     cover 2
     box_get
@@ -1223,30 +1283,46 @@ pay_scholarship_bool_merge@8:
     swap
     replace2 72
     box_put
+    int 1
+    itob
+    frame_dig 10
+    swap
+    box_put
     itxn_begin
     global CurrentApplicationAddress
     itxn_field AssetSender
     int 1
     itxn_field AssetAmount
-    frame_dig 2
+    frame_dig 6
     dup
     itxn_field AssetCloseTo
     dup
     itxn_field AssetReceiver
-    frame_dig 0
+    frame_dig 4
     itxn_field XferAsset
     int axfer
     itxn_field TypeEnum
     int 0
     itxn_field Fee
     itxn_submit
-    frame_dig 3
+    frame_dig 7
     swap
     concat
     method "PayScholarship(uint64,address)"
     swap
     concat
     log
+    retsub
+
+
+// smart_contracts.scholarship.contract.Certificate.get_paid_key(scholarship_id: uint64, addr: bytes) -> bytes:
+get_paid_key:
+    proto 2 1
+    frame_dig -2
+    itob
+    frame_dig -1
+    concat
+    sha256
     retsub
 
 

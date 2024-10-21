@@ -15,19 +15,19 @@ __puya_arc4_router__:
     proto 0 1
     txn NumAppArgs
     bz __puya_arc4_router___bare_routing@11
-    method "op_into_asset(asset)void"
+    method "opt_into_asset(asset)void"
     method "allow_owner_campaign(address)void"
-    method "add_campaign(byte[],byte[],uint64)void"
-    method "mint_asset(address,uint64,uint64)void"
+    method "add_campaign(byte[],byte[],uint64)uint64"
+    method "mint_token(byte[],address,uint64,uint64)void"
     method "check_eligible(address,uint64,uint64)bool"
     method "owner_campaign(uint64)address"
     method "creator()address"
     txna ApplicationArgs 0
-    match __puya_arc4_router___op_into_asset_route@2 __puya_arc4_router___allow_owner_campaign_route@3 __puya_arc4_router___add_campaign_route@4 __puya_arc4_router___mint_asset_route@5 __puya_arc4_router___check_eligible_route@6 __puya_arc4_router___owner_campaign_route@7 __puya_arc4_router___creator_route@8
+    match __puya_arc4_router___opt_into_asset_route@2 __puya_arc4_router___allow_owner_campaign_route@3 __puya_arc4_router___add_campaign_route@4 __puya_arc4_router___mint_token_route@5 __puya_arc4_router___check_eligible_route@6 __puya_arc4_router___owner_campaign_route@7 __puya_arc4_router___creator_route@8
     int 0
     retsub
 
-__puya_arc4_router___op_into_asset_route@2:
+__puya_arc4_router___opt_into_asset_route@2:
     txn OnCompletion
     !
     assert // OnCompletion is NoOp
@@ -36,7 +36,7 @@ __puya_arc4_router___op_into_asset_route@2:
     txna ApplicationArgs 1
     btoi
     txnas Assets
-    callsub op_into_asset
+    callsub opt_into_asset
     int 1
     retsub
 
@@ -64,21 +64,28 @@ __puya_arc4_router___add_campaign_route@4:
     txna ApplicationArgs 3
     btoi
     callsub add_campaign
+    itob
+    byte 0x151f7c75
+    swap
+    concat
+    log
     int 1
     retsub
 
-__puya_arc4_router___mint_asset_route@5:
+__puya_arc4_router___mint_token_route@5:
     txn OnCompletion
     !
     assert // OnCompletion is NoOp
     txn ApplicationID
     assert // is not creating
     txna ApplicationArgs 1
+    extract 2 0
     txna ApplicationArgs 2
-    btoi
     txna ApplicationArgs 3
     btoi
-    callsub mint_asset
+    txna ApplicationArgs 4
+    btoi
+    callsub mint_token
     int 1
     retsub
 
@@ -149,8 +156,8 @@ __puya_arc4_router___after_if_else@15:
     retsub
 
 
-// smart_contracts.campaign.contract.Campaign.op_into_asset(asset: uint64) -> void:
-op_into_asset:
+// smart_contracts.campaign.contract.Campaign.opt_into_asset(asset: uint64) -> void:
+opt_into_asset:
     proto 1 0
     int 0
     byte "asa"
@@ -167,6 +174,16 @@ op_into_asset:
     byte "asa"
     frame_dig -1
     app_global_put
+    itxn_begin
+    global CurrentApplicationAddress
+    itxn_field AssetReceiver
+    frame_dig -1
+    itxn_field XferAsset
+    int axfer
+    itxn_field TypeEnum
+    int 0
+    itxn_field Fee
+    itxn_submit
     retsub
 
 
@@ -198,12 +215,21 @@ only_creator:
     retsub
 
 
-// smart_contracts.campaign.contract.Campaign.add_campaign(proof: bytes, root: bytes, expired_at: uint64) -> void:
+// smart_contracts.campaign.contract.Campaign.add_campaign(proof: bytes, root: bytes, duration: uint64) -> uint64:
 add_campaign:
-    proto 3 0
+    proto 3 1
     callsub only_valid_owner_campaign
     txn Sender
     dup
+    int 0
+    byte "total_campaign"
+    app_global_get_ex
+    assert // check self.total_campaign exists
+    int 1
+    +
+    byte "total_campaign"
+    swap
+    app_global_put
     int 0
     byte "total_campaign"
     app_global_get_ex
@@ -252,29 +278,37 @@ add_campaign_else_body@2:
     box_put
 
 add_campaign_after_if_else@3:
-    int 0
-    byte "total_campaign"
-    app_global_get_ex
-    assert // check self.total_campaign exists
-    int 1
-    +
-    byte "total_campaign"
-    swap
-    app_global_put
-    frame_dig -3
-    len
-    itob
-    extract 6 2
-    frame_dig -3
-    concat
-    frame_dig -2
-    len
-    itob
-    extract 6 2
-    frame_dig -2
-    concat
-    swap
     frame_dig -1
+    global LatestTimestamp
+    +
+    dup
+    assert
+    frame_dig 1
+    dup
+    cover 2
+    itob
+    byte "campaign"
+    dig 1
+    concat
+    dup
+    box_len
+    bury 1
+    !
+    assert
+    frame_dig -3
+    len
+    itob
+    extract 6 2
+    frame_dig -3
+    concat
+    frame_dig -2
+    len
+    itob
+    extract 6 2
+    frame_dig -2
+    concat
+    swap
+    uncover 4
     itob
     swap
     dup
@@ -288,29 +322,26 @@ add_campaign_after_if_else@3:
     concat
     frame_dig 0
     dup
-    cover 6
+    cover 5
     concat
     uncover 3
     concat
     dig 2
     concat
-    dig 3
+    dig 4
     concat
-    frame_dig 1
-    itob
-    byte "campaign"
-    dig 1
-    concat
-    dup
+    dig 5
     box_del
     pop
-    uncover 2
+    uncover 5
+    swap
     box_put
+    uncover 4
     byte 0x002c
     concat
     swap
     concat
-    uncover 3
+    uncover 2
     concat
     swap
     concat
@@ -320,6 +351,7 @@ add_campaign_after_if_else@3:
     swap
     concat
     log
+    frame_bury 0
     retsub
 
 
@@ -350,44 +382,63 @@ only_valid_owner_campaign_bool_merge@4:
     retsub
 
 
-// smart_contracts.campaign.contract.Campaign.mint_asset(addr: bytes, amount: uint64, campaign_id: uint64) -> void:
-mint_asset:
-    proto 3 0
+// smart_contracts.campaign.contract.Campaign.mint_token(leaf_data: bytes, addr: bytes, amount: uint64, campaign_id: uint64) -> void:
+mint_token:
+    proto 4 0
+    int 0
+    byte ""
+    txn Sender
     frame_dig -1
     itob
     dup
     byte "campaign"
-    dig 1
+    swap
     concat
+    dup
     box_get
     swap
-    dup
     cover 2
-    cover 3
     assert // check self.campaign entry exists
     global LatestTimestamp
-    dig 1
-    extract 36 8 // on error: Index access is out of bounds
     swap
-    itob
-    b<
-    assert // Expired
+    frame_dig -1
+    frame_dig -3
+    callsub get_claim_key
+    swap
+    box_len
+    bury 1
+    assert
     byte "claimed"
-    uncover 2
+    swap
     concat
     dup
-    cover 2
-    box_get
-    assert // check self.claimed entry exists
-    frame_dig -3
-    concat
+    box_len
+    bury 1
+    bz mint_token_bool_true@2
+    frame_dig 6
     box_get
     swap
     btoi
     swap
-    assert // check BoxMap entry exists
-    !
-    assert // User claimed
+    assert // check self.claimed entry exists
+    bnz mint_token_bool_false@3
+
+mint_token_bool_true@2:
+    int 1
+    b mint_token_bool_merge@4
+
+mint_token_bool_false@3:
+    int 0
+
+mint_token_bool_merge@4:
+    assert
+    frame_dig 4
+    dup
+    extract 36 8 // on error: Index access is out of bounds
+    frame_dig 5
+    itob
+    b>=
+    assert // Expired
     dup
     int 0
     extract_uint16
@@ -396,61 +447,58 @@ mint_asset:
     int 2
     extract_uint16
     dup
-    cover 3
+    frame_bury 1
     swap
     cover 2
     substring3
     dup
+    frame_bury 0
     byte 0x0000
     !=
-    bz mint_asset_bool_false@3
-    frame_dig 1
+    bz mint_token_bool_false@7
+    frame_dig 4
     dup
     len
-    frame_dig 3
+    frame_dig 1
     swap
     substring3
     byte 0x0000
     !=
-    bz mint_asset_bool_false@3
+    bz mint_token_bool_false@7
     int 1
-    b mint_asset_bool_merge@4
+    b mint_token_bool_merge@8
 
-mint_asset_bool_false@3:
+mint_token_bool_false@7:
     int 0
 
-mint_asset_bool_merge@4:
+mint_token_bool_merge@8:
     assert // Campaign is not found
-    frame_dig -2
-    itob
-    frame_dig -3
-    dig 1
-    callsub hash_pair
-    frame_dig 1
+    frame_dig -4
+    sha256
+    frame_dig 4
     dup
     len
-    frame_dig 3
+    frame_dig 1
     swap
     substring3
-    frame_dig 4
+    frame_dig 0
     swap
     uncover 2
     callsub verify_asset
     assert // Invalid data
-    frame_dig 2
-    box_get
-    assert // check self.claimed entry exists
-    frame_dig -3
-    concat
     int 1
     itob
+    frame_dig 6
+    swap
     box_put
     itxn_begin
     int 0
     byte "asa"
     app_global_get_ex
     assert // check self.asa exists
-    txn Sender
+    frame_dig 2
+    dup
+    cover 2
     itxn_field AssetReceiver
     frame_dig -2
     itxn_field AssetAmount
@@ -460,10 +508,10 @@ mint_asset_bool_merge@4:
     int 0
     itxn_field Fee
     itxn_submit
-    frame_dig -3
-    swap
+    frame_dig -2
+    itob
     concat
-    frame_dig 0
+    frame_dig 3
     concat
     method "MintEvent(address,uint64,uint64)"
     swap
@@ -472,10 +520,11 @@ mint_asset_bool_merge@4:
     retsub
 
 
-// smart_contracts.campaign.contract.Campaign.hash_pair(a: bytes, b: bytes) -> bytes:
-hash_pair:
+// smart_contracts.campaign.contract.Campaign.get_claim_key(campaign_id: uint64, addr: bytes) -> bytes:
+get_claim_key:
     proto 2 1
     frame_dig -2
+    itob
     frame_dig -1
     concat
     sha256
@@ -486,48 +535,171 @@ hash_pair:
 verify_asset:
     proto 3 1
     int 0
-    byte "HASH_LENGTH"
-    app_global_get_ex
-    swap
-    dup
-    uncover 2
-    assert // check self.HASH_LENGTH exists
+    dupn 2
+    byte ""
+    dupn 3
     frame_dig -3
     len
-    swap
-    assert // Step cannot be zero
-    int 0
-    frame_dig -1
-
-verify_asset_for_header@1:
-    frame_dig 2
-    frame_dig 1
-    <
-    bz verify_asset_after_for@4
+    dup
     int 0
     byte "HASH_LENGTH"
     app_global_get_ex
     assert // check self.HASH_LENGTH exists
+    %
+    bnz verify_asset_ternary_false@2
+    frame_dig -2
+    frame_bury 2
+    b verify_asset_ternary_merge@3
+
+verify_asset_ternary_false@2:
+    frame_dig -2
+    len
+    int 0
+    byte "HASH_LENGTH"
+    app_global_get_ex
+    assert // check self.HASH_LENGTH exists
+    dig 1
+    swap
+    %
+    swap
+    int 0
+    byte "HASH_LENGTH"
+    app_global_get_ex
+    assert // check self.HASH_LENGTH exists
+    dig 1
+    swap
+    %
+    -
+    frame_dig -2
+    cover 2
+    extract3
+    frame_bury 2
+
+verify_asset_ternary_merge@3:
+    int 0
+    byte "HASH_LENGTH"
+    app_global_get_ex
+    assert // check self.HASH_LENGTH exists
+    frame_dig 7
+    swap
+    %
+    bnz verify_asset_ternary_false@5
     frame_dig -3
-    frame_dig 2
+    frame_bury 1
+    b verify_asset_ternary_merge@6
+
+verify_asset_ternary_false@5:
+    int 0
+    byte "HASH_LENGTH"
+    app_global_get_ex
+    assert // check self.HASH_LENGTH exists
+    frame_dig 7
     dup
-    cover 3
+    uncover 2
+    %
+    swap
+    int 0
+    byte "HASH_LENGTH"
+    app_global_get_ex
+    assert // check self.HASH_LENGTH exists
+    dig 1
+    swap
+    %
+    -
+    frame_dig -3
+    cover 2
+    extract3
+    frame_bury 1
+
+verify_asset_ternary_merge@6:
+    int 0
+    byte "HASH_LENGTH"
+    app_global_get_ex
+    swap
+    dup
+    cover 2
+    frame_bury 4
+    assert // check self.HASH_LENGTH exists
+    frame_dig 1
+    len
+    frame_bury 5
+    assert // Step cannot be zero
+    int 0
+    frame_bury 3
+    frame_dig -1
+    frame_bury 0
+
+verify_asset_for_header@7:
+    frame_dig 3
+    frame_dig 5
+    <
+    bz verify_asset_after_for@13
+    int 0
+    byte "HASH_LENGTH"
+    app_global_get_ex
+    assert // check self.HASH_LENGTH exists
+    frame_dig 1
+    frame_dig 3
     uncover 2
     extract3
-    frame_dig 3
+    dup
+    len
+    dup
+    frame_bury 6
+    int 0
+    byte "HASH_LENGTH"
+    app_global_get_ex
+    assert // check self.HASH_LENGTH exists
+    %
+    bnz verify_asset_ternary_false@10
+    b verify_asset_ternary_merge@11
+
+verify_asset_ternary_false@10:
+    int 0
+    byte "HASH_LENGTH"
+    app_global_get_ex
+    assert // check self.HASH_LENGTH exists
+    frame_dig 6
+    dup
+    uncover 2
+    %
+    swap
+    int 0
+    byte "HASH_LENGTH"
+    app_global_get_ex
+    assert // check self.HASH_LENGTH exists
+    dig 1
+    swap
+    %
+    -
+    extract3
+
+verify_asset_ternary_merge@11:
+    frame_dig 0
     swap
     callsub hash_pair
-    frame_bury 3
-    frame_dig 0
-    +
-    frame_bury 2
-    b verify_asset_for_header@1
-
-verify_asset_after_for@4:
+    frame_bury 0
     frame_dig 3
-    frame_dig -2
+    frame_dig 4
+    +
+    frame_bury 3
+    b verify_asset_for_header@7
+
+verify_asset_after_for@13:
+    frame_dig 0
+    frame_dig 2
     ==
     frame_bury 0
+    retsub
+
+
+// smart_contracts.campaign.contract.Campaign.hash_pair(a: bytes, b: bytes) -> bytes:
+hash_pair:
+    proto 2 1
+    frame_dig -2
+    frame_dig -1
+    concat
+    sha256
     retsub
 
 
